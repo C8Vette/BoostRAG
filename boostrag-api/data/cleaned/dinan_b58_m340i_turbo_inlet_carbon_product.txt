@@ -1,0 +1,23 @@
+Brand: Dinan
+Category: Turbo Inlet
+Product: B58 Turbo Inlet Pipe - Carbon Fiber
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.ecstuning.com/b-dinan-parts/b58-turbo-inlet-pipe-carbon-fiber/d760-0062~din/
+
+Summary:
+Dinan offers a carbon-fiber turbo inlet pipe for B58 applications. The page describes the stock turbo inlet as having flow restrictions, turbulence, and sound-dampening features, and presents the Dinan inlet as a way to increase airflow efficiency and turbo sound.
+
+Specifications and Features:
+- Increased turbo efficiency and reliability through more uniform airflow
+- Eliminates factory sound resonator for increased turbo vocalization
+- Page states the stock turbo inlet includes restrictive features and turbulence
+- Product is marketed as improving airflow while amplifying turbo induction sound
+
+Fitment:
+- Page notes only fits 2020-2024
+- ECS fitment list includes BMW G20 M340i and G20 M340i xDrive among supported vehicles
+
+Notes:
+- Not for sale or use in California on pollution-controlled vehicles, according to the page
+- This entry is useful for turbo inlet and induction sound questions

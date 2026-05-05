@@ -1,0 +1,25 @@
+Brand: CSF Cooling
+Category: Cooling
+Product: High Performance Front Mount Heat Exchanger with Rock Guard
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.ecstuning.com/b-csf-parts/csf-high-performance-front-mount-heat-exchanger-a90-91-supra-g29-z4-g20-g21-3-series/8154~csf/
+
+Summary:
+CSF offers a high-performance front-mount heat exchanger with rock guard for BMW and related B58 platforms. The page emphasizes a dual-pass design and improved thermal performance for reducing intake air temperature and heat soak.
+
+Specifications and Features:
+- Dual-pass flow structure
+- Removable aluminum rock guard
+- Claimed significant reduction in intake air temperature (IAT) with faster heat-soak recovery
+- Claimed improved airflow to the rest of the cooling system for lower engine water and oil temperatures
+- 2-row, 42 mm ultra high-performance core
+- 6.5 mm tall multi-louvered fin with CSF B-Tube technology
+- CNC machined mounting brackets and OEM-style quick-connect inlet/outlet
+- 100% all-aluminum TIG-welded construction
+
+Fitment:
+- ECS fitment list includes BMW G20 M340i and G20 M340i xDrive among supported vehicles
+
+Notes:
+- This entry is useful for cooling, temperature control, and heat-soak-related questions

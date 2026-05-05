@@ -1,0 +1,38 @@
+# Old school project - keep separate
+BoostRag_local/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Environment variables / secrets
+.env
+*.env
+
+# Node / React
+node_modules/
+dist/
+build/
+.vite/
+
+# Vector databases / generated indexes
+vectorstore/
+boostrag-api/vectorstore/
+
+# Chroma / local DB files
+chroma/
+*.sqlite3
+*.sqlite
+*.db
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*

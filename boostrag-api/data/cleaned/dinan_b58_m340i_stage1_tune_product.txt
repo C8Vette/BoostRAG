@@ -1,0 +1,24 @@
+Brand: Dinan
+Category: Tune
+Product: Dinan Stage 1 Performance Engine Software - BMW B58 (O1) Engine
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.dinancars.com/products/software-tuning/engine-tuning/engine-software/stage-1-engine-software/parts/D900-B58-G-S1
+Price: $549.95
+
+Summary:
+Dinan offers Stage 1 performance engine software for BMW B58 (O1) applications. The page identifies the tune as part number D900-B58-G-S1 and lists G20 among the supported vehicle groups.
+
+Specifications and Notes:
+- Product type: Stage 1 performance engine software
+- Part number: D900-B58-G-S1
+- Vehicle groups listed: G01 / G02 / G20 / G29
+- Suggested retail price: $549.95
+
+Fitment:
+- G20 listed among supported chassis groups
+- Additional fitment details should be verified against the product page and later technical resources if needed
+
+Notes:
+- This is a software/tuning source rather than a hardware product page
+- Useful for questions about tune availability, pricing, and product category

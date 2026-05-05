@@ -1,0 +1,27 @@
+Brand: Dinan
+Category: Intake
+Product: Dinan PEX Cold Air Intake
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.ecstuning.com/b-dinan-parts/dinan-pex-cold-air-intake-g2x-b58/d760-0069~din/
+
+Summary:
+Dinan offers a PEX cold air intake for G2x B58 Mx40i models. The page emphasizes increased airflow, improved throttle response, louder induction sound, and a larger air box and filter area than stock.
+
+Specifications and Features:
+- Claimed max gains of 9 WHP and 8 lb-ft of torque on a stock vehicle
+- High heat-deflection PEX construction with OEM-style appearance
+- Louder, sportier sound
+- Improved throttle response
+- Claimed to outflow factory intake by 58% or more
+- Larger air box (60% larger than stock)
+- 40% increase in filter area (stock: 82 in², Dinan: 115 in²)
+- Compatible with all G2x Mx40i models with and without factory bracing
+- Quick and easy installation
+
+Fitment:
+- ECS fitment list includes BMW G20 M340i and G20 M340i xDrive among supported vehicles
+
+Notes:
+- Not legal for sale or use in California on pollution-controlled vehicles, according to the page
+- ECS page indicates Lifetime Replacement Program eligibility

@@ -1,0 +1,27 @@
+Brand: BimmerNetwork
+Category: Charge Pipe
+Product: BN B58 Aluminum Charge Pipe Upgrade Kit
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.bimmernetwork.com/products/bn-gen1-b58-aluminum-charge-pipe-upgrade-kit
+Price: Sale price $219.99
+
+Summary:
+BimmerNetwork offers an aluminum charge pipe upgrade kit for B58 applications with Gen1 and Gen2 fitment options. The page emphasizes durability under high boost conditions and positions the aluminum construction as a stronger alternative to OEM plastic charge pipes.
+
+Specifications and Features:
+- Aluminum construction intended for high strength and resilience
+- Marketed as an upgrade over OEM plastic charge pipes under high boost
+- Includes 4-ply silicone coupler
+- Includes T-bolt clamps
+- Includes new O-ring and C-clip
+- Includes three 1/8 NPT ports for add-ons such as pressure sensors, methanol, or nitrous
+- Benefits claimed include increased throttle response and improved durability
+
+Fitment and Options:
+- Gen1 option listed as 3-bolt to throttle
+- Gen2 option listed as 2-bolt to throttle
+
+Notes:
+- OEM part numbers referenced on page: 13718601684 and 13718651066
+- This entry is useful for questions about charge pipe construction, durability, and accessory port support

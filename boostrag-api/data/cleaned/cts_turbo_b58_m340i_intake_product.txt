@@ -1,0 +1,21 @@
+Brand: CTS Turbo
+Category: Intake
+Product: CTS Turbo Intake Kit
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.ecstuning.com/b-cts-parts/cts-turbo-intake-kit/cts-it-800-30~ct/
+
+Summary:
+CTS Turbo offers an intake kit for B58 applications. The page emphasizes intake hardware design, airflow-related components, and fit-and-finish details.
+
+Specifications and Features:
+- Proprietary aluminum OE-style hexagon-shaped MAF housing
+- Mandrel-bent large-bore 3.5-inch aluminum piping with black powder coating
+- 3.5-inch reusable air filter with inverted cone design
+- 4-ply silicone connectors with stainless steel clamps
+- Powder-coated air box
+- Bracketry and hardware intended to prevent rattling under engine torque
+
+Notes:
+- Keep this entry if you want hardware/design-oriented intake comparisons
+- ECS parsing exposes strong feature text but weaker fitment detail than some other pages

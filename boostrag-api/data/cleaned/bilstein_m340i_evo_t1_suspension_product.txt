@@ -1,0 +1,26 @@
+Brand: Bilstein
+Category: Suspension
+Product: Bilstein EVO T1 Suspension Kit
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.ecstuning.com/b-bilstein-parts/bilstein-evo-t1-suspension-kit/48-300162~bil/
+
+Summary:
+Bilstein offers the EVO T1 suspension kit as a coilover package aimed at everyday street use with occasional track duty. The page emphasizes ride-height adjustment, manual damping adjustment, and track-tested development.
+
+Specifications and Features:
+- Coilover kit for everyday street use and occasional track duty
+- Ride height adjustability
+- Manually adjustable performance dampers
+- 10-stage damping system adjusting rebound and compression
+- Redesigned threaded-body dampers allowing lowering of up to 70 mm
+- Claimed benefits include greater stability, traction, and higher cornering speeds
+- Designed and built in Germany
+- Technology tested and tuned on the Nurburgring
+
+Fitment:
+- ECS fitment list includes BMW G20 M340i among supported vehicles
+
+Notes:
+- ECS page indicates Lifetime Replacement Program eligibility
+- This entry is useful for suspension and coilover-related questions

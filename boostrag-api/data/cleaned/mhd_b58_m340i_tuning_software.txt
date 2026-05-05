@@ -1,0 +1,27 @@
+Brand: MHD Tuning
+Category: Tune
+Product: MHD Super License for B58
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.bimmernetwork.com/products/mhd-super-license-for-b58
+Price: Sale price $599.00
+
+Summary:
+MHD offers the Super License for B58 as a complete flash tuning package for BMW and Toyota A90 applications. The product page describes full DME remapping while retaining OEM safety mechanisms and says installation can be done at home using the MHD Flasher app, an iOS or Android device, and the vehicle’s OBD-II port.
+
+Specifications and Features:
+- Complete flash tuning app for BMW and Toyota A90 applications
+- Complete DME remapping while retaining OEM safety mechanisms
+- Home installation through the MHD Flasher F+G Series app and OBD-II connection
+- Initial installation described as taking about 5 minutes
+- Later map changes described as taking about 30 seconds
+- Revert to factory OEM flash at any point
+- Super License includes Flasher, Monitor, and all 3 Map packs
+- Quick flash times with MHD WiFi adapter
+- Code reading / deleting and adaptations reset
+- Available flash options listed include exhaust burble, startup roar, cold start noise reduction, exhaust flap control, top speed limiter removal, sport/racing cooling mode, sport intercooler cooling mode, upgraded HPFP support, and OPF / GPF / cat delete options
+- MHD+ functions listed include on-the-fly map switching, antilag, switchable burble per map slot, on-the-fly exhaust flap control, ethanol content quick view, Motiv ReFlex integration, overrun brap noise, no-lift shift, custom TCU limiter removal, KnockCEL, and real-time tuning for B58 GEN2
+
+Notes:
+- Product page describes the software as retaining OEM safety mechanisms
+- This entry is useful for questions about tune software capabilities, map switching, and supported software features

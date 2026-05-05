@@ -1,0 +1,23 @@
+Brand: VRSF
+Category: Charge Pipe
+Product: VRSF B58 Charge Pipe Upgrade Kit - 2-Bolt Flange
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.ecstuning.com/b-vrsf-parts/vrsf-b58-charge-pipe-upgrade-kit-2020-2-bolt-throttle-body-flange/10581040~vrf/
+
+Summary:
+VRSF offers a B58 charge pipe upgrade kit with a 2-bolt flange. The page describes the factory charge pipe as prone to failure at both stock and tuned boost levels and presents the VRSF part as a stronger replacement with added auxiliary port support.
+
+Specifications and Features:
+- Durable wrinkle black powder-coated finish
+- Includes one plugged 1/8 NPT bung
+- NPT bung can be used for water injection, boost leak testing, or as a boost source
+- Includes 4-ply silicone couplers
+- Includes stainless steel T-bolt clamps
+- Page states the OEM charge pipe is prone to failure at stock and tuned boost levels
+
+Fitment:
+- ECS fitment list includes BMW G20 M340i and G20 M340i xDrive among supported vehicles
+
+Notes:
+- This entry is useful for questions about charge pipe reliability, boost-related upgrades, and water/meth or boost source provisions

@@ -1,0 +1,26 @@
+Brand: BimmerNetwork
+Category: Turbo Inlet
+Product: BN B58 Gen1 High Flow Aluminum Turbo Inlet
+Vehicle: BMW M340i
+Source Type: Product Page
+URL: https://www.bimmernetwork.com/products/b58-gen1-high-flow-aluminum-turbo-inlet
+Price: Sale price $149.99
+
+Summary:
+BimmerNetwork offers a Gen 1 B58 high-flow aluminum turbo inlet intended to improve airflow and turbo response. The page states that it is designed for B58 applications and highlights improved throttle response, faster spool, and increased induction sound from removal of factory silencers.
+
+Specifications and Features:
+- Aluminum turbo inlet for Gen 1 B58 applications
+- Designed for improved airflow and power output
+- Claimed improved throttle response
+- Claimed faster turbo spool times
+- Removes factory silencers for more induction sound
+- Intended for stock turbo or certain hybrid turbo setups that use a silicone coupler
+
+Fitment and Options:
+- Chassis fitment options listed for F chassis and G chassis
+- Product page mentions models including 340i, 440i, M240i, and M140i
+
+Notes:
+- Installation is described as easy for a mechanic with proper tools
+- This entry is useful for turbo inlet and airflow-related questions
