@@ -92,7 +92,10 @@ function App() {
     setSources([]);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/ask", {
+      const apiBaseUrl =
+        import.meta.env.VITE_BOOSTRAG_API_URL || "http://127.0.0.1:8000";
+
+      const response = await fetch(`${apiBaseUrl}/ask`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
