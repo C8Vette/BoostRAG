@@ -31,7 +31,8 @@ chroma/
 # OS / editor
 .DS_Store
 Thumbs.db
-.vscode/
+.vscode/*
+!.vscode/tasks.json
 
 # Logs
 *.log

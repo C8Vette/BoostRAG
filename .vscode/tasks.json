@@ -1,0 +1,45 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "API: Start",
+      "type": "shell",
+      "command": ".venv\\Scripts\\python.exe -m uvicorn main:app --reload",
+      "options": {
+        "cwd": "${workspaceFolder}/boostrag-api"
+      },
+      "presentation": {
+        "label": "API",
+        "panel": "dedicated",
+        "reveal": "always",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Frontend: Start",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": {
+        "cwd": "${workspaceFolder}/boostrag-frontend"
+      },
+      "presentation": {
+        "label": "Frontend",
+        "panel": "dedicated",
+        "reveal": "always",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "BoostRAG: Start Dev",
+      "dependsOn": ["API: Start", "Frontend: Start"],
+      "dependsOrder": "parallel",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}
