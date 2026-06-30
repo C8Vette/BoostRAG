@@ -291,9 +291,11 @@ def build_cleaned_text(
     price: str,
     body_text: str,
     score: dict,
+    fitment: list[str] | None = None,
 ) -> str:
     claim_types = ", ".join(score["claim_types"])
     risk_flags = ", ".join(score["risk_flags"]) if score["risk_flags"] else "None"
+    fitment_line = f"\n    Fitment: {', '.join(fitment)}" if fitment else ""
 
     metadata_header = f"""
     Source Title: {title}
@@ -301,7 +303,7 @@ def build_cleaned_text(
     Source Domain: {domain}
     Brand: {brand}
     Category: {category}
-    Vehicle: {vehicle}
+    Vehicle: {vehicle}{fitment_line}
     Price: {price}
     Source Type: {score["source_type"]}
     Trust Tier: {score["trust_tier"]}
@@ -320,7 +322,12 @@ def build_cleaned_text(
     return f"{metadata_header}\n\n--- Extracted Page Text ---\n\n{body_text}"
 
 
-def ingest_url(url: str) -> tuple[Path, Path, dict]:
+def ingest_url(
+    url: str,
+    *,
+    fitment: list[str] | None = None,
+    price_override: str | None = None,
+) -> tuple[Path, Path, dict]:
     for directory in [CLEANED_DIR, LIMITED_DIR, QUARANTINE_DIR, METADATA_DIR]:
         directory.mkdir(parents=True, exist_ok=True)
 
@@ -342,7 +349,7 @@ def ingest_url(url: str) -> tuple[Path, Path, dict]:
     brand = guess_brand(body_text, title, domain)
     category = guess_category(body_text, title)
     vehicle = guess_vehicle(body_text, title)
-    price = extract_price(body_text)
+    price = price_override if price_override is not None else extract_price(body_text)
 
     score = score_source(url=url, title=title, text=body_text).to_dict()
 
@@ -363,6 +370,7 @@ def ingest_url(url: str) -> tuple[Path, Path, dict]:
         price=price,
         body_text=body_text,
         score=score,
+        fitment=fitment,
     )
 
     metadata = {
@@ -374,6 +382,7 @@ def ingest_url(url: str) -> tuple[Path, Path, dict]:
         "category": category,
         "vehicle": vehicle,
         "price": price,
+        **({"fitment": fitment} if fitment else {}),
         **score,
         "text_file": str(txt_path),
         "metadata_file": str(json_path),
