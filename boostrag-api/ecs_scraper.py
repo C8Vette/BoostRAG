@@ -117,3 +117,115 @@ def get_product_urls(category_url: str, session: requests.Session) -> list[str]:
             time.sleep(1.5)
 
     return list(dict.fromkeys(all_urls))  # deduplicate, preserve order
+
+
+def _check_robots(session: requests.Session) -> None:
+    """Abort if robots.txt disallows crawling ECS Tuning product pages."""
+    rp = urllib.robotparser.RobotFileParser()
+    try:
+        response = session.get(
+            "https://www.ecstuning.com/robots.txt",
+            headers={"User-Agent": USER_AGENT},
+            timeout=10,
+        )
+        rp.parse(response.text.splitlines())
+    except requests.RequestException:
+        print("Warning: could not fetch robots.txt — proceeding with caution.")
+        return
+
+    if not rp.can_fetch(USER_AGENT, "https://www.ecstuning.com/b-BMW/"):
+        raise RuntimeError("robots.txt disallows crawling ECS Tuning. Aborting.")
+
+
+def scrape_ecs_b58(
+    category_urls: list[str],
+    *,
+    limit: int | None,
+    force: bool,
+    dry_run: bool,
+) -> None:
+    session = requests.Session()
+    _check_robots(session)
+
+    already_ingested = set() if force else get_ingested_urls()
+
+    all_product_urls: list[str] = []
+    for cat_url in category_urls:
+        print(f"Discovering: {cat_url}")
+        found = get_product_urls(cat_url, session)
+        print(f"  Found {len(found)} product URLs")
+        all_product_urls.extend(found)
+        time.sleep(1.5)
+
+    new_urls = [u for u in dict.fromkeys(all_product_urls) if u not in already_ingested]
+    if limit is not None:
+        new_urls = new_urls[:limit]
+
+    print(f"\n{len(new_urls)} new products to ingest (force={force}, dry_run={dry_run})\n")
+
+    for url in new_urls:
+        if dry_run:
+            print(f"[dry-run] Would ingest: {url}")
+            continue
+
+        try:
+            response = session.get(url, headers={"User-Agent": USER_AGENT}, timeout=20)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "lxml")
+
+            price = extract_ecs_price(soup)
+            raw_fitment = extract_fitment(soup)
+            fitment = raw_fitment if raw_fitment else None
+
+            _, _, metadata = ingest_url(url, fitment=fitment, price_override=price)
+            print(
+                f"Ingested: {url}\n"
+                f"  Route: {metadata.get('route')} | "
+                f"Price: {price} | Fitment: {fitment}"
+            )
+        except Exception as exc:
+            print(f"Failed: {url} — {exc}")
+
+        time.sleep(1.5)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Scrape ECS Tuning B58 product pages into the BoostRAG corpus."
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Re-scrape and overwrite already-ingested URLs.",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print what would be ingested without writing anything.",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Stop after ingesting N products.",
+    )
+    parser.add_argument(
+        "--category",
+        choices=list(ECS_B58_CATEGORIES.keys()),
+        default=None,
+        help="Scrape a single category only.",
+    )
+    args = parser.parse_args()
+
+    category_urls = (
+        [ECS_B58_CATEGORIES[args.category]]
+        if args.category
+        else list(ECS_B58_CATEGORIES.values())
+    )
+
+    scrape_ecs_b58(category_urls, limit=args.limit, force=args.force, dry_run=args.dry_run)
+
+
+if __name__ == "__main__":
+    main()
