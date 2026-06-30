@@ -6,6 +6,7 @@ import re
 import time
 import urllib.robotparser
 from pathlib import Path
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
@@ -87,7 +88,7 @@ def _extract_product_urls_from_page(soup: BeautifulSoup, base_url: str) -> list[
             if href.startswith("http"):
                 urls.append(href)
             else:
-                urls.append(base_url.rstrip("/") + "/" + href.lstrip("/"))
+                urls.append(urljoin(base_url, href))
     return urls
 
 
@@ -112,7 +113,8 @@ def get_product_urls(category_url: str, session: requests.Session) -> list[str]:
         response.raise_for_status()
         soup = BeautifulSoup(response.text, "lxml")
         all_urls.extend(_extract_product_urls_from_page(soup, base_url))
-        current_url = _get_next_page_url(soup)
+        next_href = _get_next_page_url(soup)
+        current_url = urljoin(current_url, next_href) if next_href else None
         if current_url:
             time.sleep(1.5)
 
@@ -128,6 +130,7 @@ def _check_robots(session: requests.Session) -> None:
             headers={"User-Agent": USER_AGENT},
             timeout=10,
         )
+        response.raise_for_status()
         rp.parse(response.text.splitlines())
     except requests.RequestException:
         print("Warning: could not fetch robots.txt — proceeding with caution.")
@@ -152,9 +155,12 @@ def scrape_ecs_b58(
     all_product_urls: list[str] = []
     for cat_url in category_urls:
         print(f"Discovering: {cat_url}")
-        found = get_product_urls(cat_url, session)
-        print(f"  Found {len(found)} product URLs")
-        all_product_urls.extend(found)
+        try:
+            found = get_product_urls(cat_url, session)
+            print(f"  Found {len(found)} product URLs")
+            all_product_urls.extend(found)
+        except requests.RequestException as exc:
+            print(f"  Failed to crawl {cat_url}: {exc} — skipping")
         time.sleep(1.5)
 
     new_urls = [u for u in dict.fromkeys(all_product_urls) if u not in already_ingested]
@@ -177,7 +183,7 @@ def scrape_ecs_b58(
             raw_fitment = extract_fitment(soup)
             fitment = raw_fitment if raw_fitment else None
 
-            _, _, metadata = ingest_url(url, fitment=fitment, price_override=price)
+            _, _, metadata = ingest_url(url, fitment=fitment, price_override=price, prefetched_html=response.text)
             print(
                 f"Ingested: {url}\n"
                 f"  Route: {metadata.get('route')} | "

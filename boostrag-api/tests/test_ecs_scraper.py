@@ -150,6 +150,38 @@ def test_get_product_urls_follows_pagination():
     assert "https://www.ecstuning.com/b-ecs/s-exhaust/ES9999999/" in urls
 
 
+def test_get_product_urls_resolves_relative_next_page_url():
+    from ecs_scraper import get_product_urls
+
+    page1_html = """
+    <html><body>
+      <a href="https://www.ecstuning.com/b-ecs/s-intake/ES1111111/">Intake</a>
+      <a rel="next" href="?page=2">Next</a>
+    </body></html>
+    """
+    page2_html = """
+    <html><body>
+      <a href="https://www.ecstuning.com/b-ecs/s-exhaust/ES2222222/">Exhaust</a>
+    </body></html>
+    """
+    called_urls = []
+    def fake_get(url, **kwargs):
+        called_urls.append(url)
+        r = MagicMock()
+        r.text = page2_html if "page=2" in url else page1_html
+        r.raise_for_status = MagicMock()
+        return r
+
+    mock_session = MagicMock()
+    mock_session.get.side_effect = fake_get
+
+    with patch("ecs_scraper.time.sleep"):
+        urls = get_product_urls("https://www.ecstuning.com/b-BMW/c-B58/", mock_session)
+
+    assert any("page=2" in u for u in called_urls), "Should have fetched page 2"
+    assert len(urls) == 2
+
+
 # --- scrape_ecs_b58 orchestrator ---
 
 def _make_orchestrator_mocks(monkeypatch, discovered_urls, already_ingested):

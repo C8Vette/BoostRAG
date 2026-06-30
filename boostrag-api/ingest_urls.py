@@ -327,12 +327,13 @@ def ingest_url(
     *,
     fitment: list[str] | None = None,
     price_override: str | None = None,
+    prefetched_html: str | None = None,
 ) -> tuple[Path, Path, dict]:
     for directory in [CLEANED_DIR, LIMITED_DIR, QUARANTINE_DIR, METADATA_DIR]:
         directory.mkdir(parents=True, exist_ok=True)
 
-    html = fetch_html(url)
-    soup = BeautifulSoup(html, "lxml")
+    raw_html = prefetched_html if prefetched_html is not None else fetch_html(url)
+    soup = BeautifulSoup(raw_html, "lxml")
     clean_soup(soup)
 
     title = extract_title(soup)
