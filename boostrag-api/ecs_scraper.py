@@ -6,10 +6,12 @@ import re
 import time
 import urllib.robotparser
 from pathlib import Path
+from typing import Callable
 from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
 
 from ingest_urls import ingest_url, extract_price
 
@@ -20,13 +22,10 @@ USER_AGENT = (
     "(automotive research assistant; local development)"
 )
 
+# Vehicle-specific category entry points. Each URL should be a paginated
+# product listing for the target vehicle on ecstuning.com.
 ECS_B58_CATEGORIES: dict[str, str] = {
-    # Verify these URLs against https://www.ecstuning.com before running
-    "intakes": "https://www.ecstuning.com/b-BMW/c-B58/s-Intake/",
-    "downpipes": "https://www.ecstuning.com/b-BMW/c-B58/s-Downpipe/",
-    "charge-pipes": "https://www.ecstuning.com/b-BMW/c-B58/s-Charge-Pipe/",
-    "cooling": "https://www.ecstuning.com/b-BMW/c-B58/s-Cooling/",
-    "exhausts": "https://www.ecstuning.com/b-BMW/c-B58/s-Exhaust/",
+    "m340i-xdrive": "https://www.ecstuning.com/BMW-G20-M340i_xDrive-B58_3.0L/",
 }
 
 KNOWN_CHASSIS = {"G20", "G22", "G26", "G29", "G01", "G30", "G07", "F30", "F32", "F10"}
@@ -76,15 +75,16 @@ def extract_fitment(soup: BeautifulSoup) -> list[str]:
     return sorted(found)
 
 
-_ECS_SKU_RE = re.compile(r'/ES\d+/', re.IGNORECASE)
+# Matches ECS product page URLs: /b-{brand}/{product-name}/{sku}/
+_ECS_PRODUCT_RE = re.compile(r'/b-[^/]+/[^/]+/[^/]+/', re.IGNORECASE)
 
 
 def _extract_product_urls_from_page(soup: BeautifulSoup, base_url: str) -> list[str]:
-    """Extract ECS product URLs (containing /ES<digits>/) from a parsed page."""
+    """Extract ECS product URLs from a parsed page."""
     urls: list[str] = []
     for a in soup.find_all("a", href=True):
         href: str = a["href"]
-        if _ECS_SKU_RE.search(href):
+        if _ECS_PRODUCT_RE.search(href):
             if href.startswith("http"):
                 urls.append(href)
             else:
@@ -100,18 +100,21 @@ def _get_next_page_url(soup: BeautifulSoup) -> str | None:
     return None
 
 
-def get_product_urls(category_url: str, session: requests.Session) -> list[str]:
+def _fetch_page_html(page, url: str) -> str:
+    """Navigate to URL with Playwright and return fully-rendered HTML."""
+    page.goto(url, wait_until="networkidle", timeout=60000)
+    return page.content()
+
+
+def get_product_urls(category_url: str, fetch_fn: Callable[[str], str]) -> list[str]:
     """Crawl a category URL with pagination and return all discovered product URLs."""
-    base_url = "/".join(category_url.split("/")[:3])  # https://www.ecstuning.com
+    base_url = "https://www.ecstuning.com"
     all_urls: list[str] = []
     current_url: str | None = category_url
 
     while current_url:
-        response = session.get(
-            current_url, headers={"User-Agent": USER_AGENT}, timeout=20
-        )
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, "lxml")
+        html = fetch_fn(current_url)
+        soup = BeautifulSoup(html, "lxml")
         all_urls.extend(_extract_product_urls_from_page(soup, base_url))
         next_href = _get_next_page_url(soup)
         current_url = urljoin(current_url, next_href) if next_href else None
@@ -121,11 +124,11 @@ def get_product_urls(category_url: str, session: requests.Session) -> list[str]:
     return list(dict.fromkeys(all_urls))  # deduplicate, preserve order
 
 
-def _check_robots(session: requests.Session) -> None:
+def _check_robots() -> None:
     """Abort if robots.txt disallows crawling ECS Tuning product pages."""
     rp = urllib.robotparser.RobotFileParser()
     try:
-        response = session.get(
+        response = requests.get(
             "https://www.ecstuning.com/robots.txt",
             headers={"User-Agent": USER_AGENT},
             timeout=10,
@@ -147,52 +150,61 @@ def scrape_ecs_b58(
     force: bool,
     dry_run: bool,
 ) -> None:
-    session = requests.Session()
-    _check_robots(session)
+    _check_robots()
 
     already_ingested = set() if force else get_ingested_urls()
 
-    all_product_urls: list[str] = []
-    for cat_url in category_urls:
-        print(f"Discovering: {cat_url}")
-        try:
-            found = get_product_urls(cat_url, session)
-            print(f"  Found {len(found)} product URLs")
-            all_product_urls.extend(found)
-        except requests.RequestException as exc:
-            print(f"  Failed to crawl {cat_url}: {exc} — skipping")
-        time.sleep(1.5)
-
-    new_urls = [u for u in dict.fromkeys(all_product_urls) if u not in already_ingested]
-    if limit is not None:
-        new_urls = new_urls[:limit]
-
-    print(f"\n{len(new_urls)} new products to ingest (force={force}, dry_run={dry_run})\n")
-
-    for url in new_urls:
-        if dry_run:
-            print(f"[dry-run] Would ingest: {url}")
-            continue
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_context(user_agent=USER_AGENT).new_page()
 
         try:
-            response = session.get(url, headers={"User-Agent": USER_AGENT}, timeout=20)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "lxml")
+            fetch_fn: Callable[[str], str] = lambda url: _fetch_page_html(page, url)
 
-            price = extract_ecs_price(soup)
-            raw_fitment = extract_fitment(soup)
-            fitment = raw_fitment if raw_fitment else None
+            all_product_urls: list[str] = []
+            for cat_url in category_urls:
+                print(f"Discovering: {cat_url}")
+                try:
+                    found = get_product_urls(cat_url, fetch_fn)
+                    print(f"  Found {len(found)} product URLs")
+                    all_product_urls.extend(found)
+                except Exception as exc:
+                    print(f"  Failed to crawl {cat_url}: {exc} — skipping")
+                time.sleep(1.5)
 
-            _, _, metadata = ingest_url(url, fitment=fitment, price_override=price, prefetched_html=response.text)
-            print(
-                f"Ingested: {url}\n"
-                f"  Route: {metadata.get('route')} | "
-                f"Price: {price} | Fitment: {fitment}"
-            )
-        except Exception as exc:
-            print(f"Failed: {url} — {exc}")
+            new_urls = [u for u in dict.fromkeys(all_product_urls) if u not in already_ingested]
+            if limit is not None:
+                new_urls = new_urls[:limit]
 
-        time.sleep(1.5)
+            print(f"\n{len(new_urls)} new products to ingest (force={force}, dry_run={dry_run})\n")
+
+            for url in new_urls:
+                if dry_run:
+                    print(f"[dry-run] Would ingest: {url}")
+                    continue
+
+                try:
+                    html = _fetch_page_html(page, url)
+                    soup = BeautifulSoup(html, "lxml")
+
+                    price = extract_ecs_price(soup)
+                    raw_fitment = extract_fitment(soup)
+                    fitment = raw_fitment if raw_fitment else None
+
+                    _, _, metadata = ingest_url(
+                        url, fitment=fitment, price_override=price, prefetched_html=html
+                    )
+                    print(
+                        f"Ingested: {url}\n"
+                        f"  Route: {metadata.get('route')} | "
+                        f"Price: {price} | Fitment: {fitment}"
+                    )
+                except Exception as exc:
+                    print(f"Failed: {url} — {exc}")
+
+                time.sleep(1.5)
+        finally:
+            browser.close()
 
 
 def main() -> None:

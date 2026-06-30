@@ -16,6 +16,14 @@ def load_fixture(name: str) -> BeautifulSoup:
     return BeautifulSoup(html, "lxml")
 
 
+def _make_pw_ctx() -> MagicMock:
+    """Return a MagicMock that satisfies `with sync_playwright() as p:`."""
+    mock_ctx = MagicMock()
+    mock_ctx.__enter__ = MagicMock(return_value=MagicMock())
+    mock_ctx.__exit__ = MagicMock(return_value=False)
+    return mock_ctx
+
+
 # --- get_ingested_urls ---
 
 def test_get_ingested_urls_returns_urls_from_metadata_jsons(tmp_path, monkeypatch):
@@ -135,16 +143,11 @@ def test_get_product_urls_follows_pagination():
         "https://www.ecstuning.com/b-BMW/c-B58/?page=2": page2_html,
     }
 
-    mock_session = MagicMock()
-    def fake_get(url, **kwargs):
-        r = MagicMock()
-        r.text = responses[url]
-        r.raise_for_status = MagicMock()
-        return r
-    mock_session.get.side_effect = fake_get
+    def fake_fetch(url: str) -> str:
+        return responses[url]
 
     with patch("ecs_scraper.time.sleep"):
-        urls = get_product_urls("https://www.ecstuning.com/b-BMW/c-B58/", mock_session)
+        urls = get_product_urls("https://www.ecstuning.com/b-BMW/c-B58/", fake_fetch)
 
     assert len(urls) == 4
     assert "https://www.ecstuning.com/b-ecs/s-exhaust/ES9999999/" in urls
@@ -165,18 +168,13 @@ def test_get_product_urls_resolves_relative_next_page_url():
     </body></html>
     """
     called_urls = []
-    def fake_get(url, **kwargs):
-        called_urls.append(url)
-        r = MagicMock()
-        r.text = page2_html if "page=2" in url else page1_html
-        r.raise_for_status = MagicMock()
-        return r
 
-    mock_session = MagicMock()
-    mock_session.get.side_effect = fake_get
+    def fake_fetch(url: str) -> str:
+        called_urls.append(url)
+        return page2_html if "page=2" in url else page1_html
 
     with patch("ecs_scraper.time.sleep"):
-        urls = get_product_urls("https://www.ecstuning.com/b-BMW/c-B58/", mock_session)
+        urls = get_product_urls("https://www.ecstuning.com/b-BMW/c-B58/", fake_fetch)
 
     assert any("page=2" in u for u in called_urls), "Should have fetched page 2"
     assert len(urls) == 2
@@ -189,7 +187,7 @@ def _make_orchestrator_mocks(monkeypatch, discovered_urls, already_ingested):
     import ecs_scraper
 
     monkeypatch.setattr(
-        ecs_scraper, "get_product_urls", lambda url, session: discovered_urls
+        ecs_scraper, "get_product_urls", lambda url, fetch_fn: discovered_urls
     )
     monkeypatch.setattr(
         ecs_scraper, "get_ingested_urls", lambda: already_ingested
@@ -210,22 +208,20 @@ def test_scrape_ecs_b58_skips_already_ingested_urls(tmp_path, monkeypatch):
         already_ingested={"https://www.ecstuning.com/b-ecs/ES111/"},
     )
 
-    mock_session = MagicMock()
-    mock_session.get.return_value.text = "<html><body></body></html>"
-
     ingested = []
     def fake_ingest(url, **kwargs):
         ingested.append(url)
         return (tmp_path / "f.txt", tmp_path / "f.json", {"url": url, "route": "cleaned"})
 
     with patch("ecs_scraper.ingest_url", side_effect=fake_ingest):
-        with patch("ecs_scraper.requests.Session", return_value=mock_session):
-            with patch("ecs_scraper._check_robots"):
-                with patch("ecs_scraper.time.sleep"):
-                    ecs_scraper.scrape_ecs_b58(
-                        ["https://www.ecstuning.com/b-BMW/c-B58/"],
-                        limit=None, force=False, dry_run=False,
-                    )
+        with patch("ecs_scraper.sync_playwright", return_value=_make_pw_ctx()):
+            with patch("ecs_scraper._fetch_page_html", return_value="<html><body></body></html>"):
+                with patch("ecs_scraper._check_robots"):
+                    with patch("ecs_scraper.time.sleep"):
+                        ecs_scraper.scrape_ecs_b58(
+                            ["https://www.ecstuning.com/b-BMW/c-B58/"],
+                            limit=None, force=False, dry_run=False,
+                        )
 
     assert ingested == ["https://www.ecstuning.com/b-ecs/ES222/"]
 
@@ -239,22 +235,20 @@ def test_scrape_ecs_b58_force_flag_reingest_known_url(tmp_path, monkeypatch):
         already_ingested={"https://www.ecstuning.com/b-ecs/ES111/"},
     )
 
-    mock_session = MagicMock()
-    mock_session.get.return_value.text = "<html><body></body></html>"
-
     ingested = []
     def fake_ingest(url, **kwargs):
         ingested.append(url)
         return (tmp_path / "f.txt", tmp_path / "f.json", {"url": url, "route": "cleaned"})
 
     with patch("ecs_scraper.ingest_url", side_effect=fake_ingest):
-        with patch("ecs_scraper.requests.Session", return_value=mock_session):
-            with patch("ecs_scraper._check_robots"):
-                with patch("ecs_scraper.time.sleep"):
-                    ecs_scraper.scrape_ecs_b58(
-                        ["https://www.ecstuning.com/b-BMW/c-B58/"],
-                        limit=None, force=True, dry_run=False,
-                    )
+        with patch("ecs_scraper.sync_playwright", return_value=_make_pw_ctx()):
+            with patch("ecs_scraper._fetch_page_html", return_value="<html><body></body></html>"):
+                with patch("ecs_scraper._check_robots"):
+                    with patch("ecs_scraper.time.sleep"):
+                        ecs_scraper.scrape_ecs_b58(
+                            ["https://www.ecstuning.com/b-BMW/c-B58/"],
+                            limit=None, force=True, dry_run=False,
+                        )
 
     assert ingested == ["https://www.ecstuning.com/b-ecs/ES111/"]
 
@@ -269,7 +263,7 @@ def test_scrape_ecs_b58_dry_run_does_not_call_ingest(monkeypatch):
     )
 
     with patch("ecs_scraper.ingest_url") as mock_ingest:
-        with patch("ecs_scraper.requests.Session"):
+        with patch("ecs_scraper.sync_playwright", return_value=_make_pw_ctx()):
             with patch("ecs_scraper._check_robots"):
                 with patch("ecs_scraper.time.sleep"):
                     ecs_scraper.scrape_ecs_b58(
@@ -289,21 +283,19 @@ def test_scrape_ecs_b58_limit_caps_ingestion(tmp_path, monkeypatch):
         already_ingested=set(),
     )
 
-    mock_session = MagicMock()
-    mock_session.get.return_value.text = "<html><body></body></html>"
-
     ingested = []
     def fake_ingest(url, **kwargs):
         ingested.append(url)
         return (tmp_path / "f.txt", tmp_path / "f.json", {"url": url, "route": "cleaned"})
 
     with patch("ecs_scraper.ingest_url", side_effect=fake_ingest):
-        with patch("ecs_scraper.requests.Session", return_value=mock_session):
-            with patch("ecs_scraper._check_robots"):
-                with patch("ecs_scraper.time.sleep"):
-                    ecs_scraper.scrape_ecs_b58(
-                        ["https://www.ecstuning.com/b-BMW/c-B58/"],
-                        limit=3, force=False, dry_run=False,
-                    )
+        with patch("ecs_scraper.sync_playwright", return_value=_make_pw_ctx()):
+            with patch("ecs_scraper._fetch_page_html", return_value="<html><body></body></html>"):
+                with patch("ecs_scraper._check_robots"):
+                    with patch("ecs_scraper.time.sleep"):
+                        ecs_scraper.scrape_ecs_b58(
+                            ["https://www.ecstuning.com/b-BMW/c-B58/"],
+                            limit=3, force=False, dry_run=False,
+                        )
 
     assert len(ingested) == 3
