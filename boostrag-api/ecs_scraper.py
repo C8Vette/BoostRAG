@@ -42,3 +42,22 @@ def get_ingested_urls() -> set[str]:
         except (json.JSONDecodeError, OSError):
             pass
     return urls
+
+
+def extract_ecs_price(soup: BeautifulSoup) -> str:
+    """Extract base product price from JSON-LD structured data; fall back to regex."""
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = json.loads(script.string or "")
+            offers = data.get("offers", {})
+            if isinstance(offers, list):
+                offers = offers[0]
+            price = offers.get("price")
+            currency = offers.get("priceCurrency", "USD")
+            if price and currency == "USD":
+                return f"${float(price):.2f}"
+        except (json.JSONDecodeError, ValueError, AttributeError, IndexError):
+            continue
+
+    body_text = soup.get_text("\n", strip=True)
+    return extract_price(body_text)
