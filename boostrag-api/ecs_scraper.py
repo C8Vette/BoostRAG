@@ -61,3 +61,15 @@ def extract_ecs_price(soup: BeautifulSoup) -> str:
 
     body_text = soup.get_text("\n", strip=True)
     return extract_price(body_text)
+
+
+_CHASSIS_PATTERN = re.compile(r'\b([FG]\d{2})\b')
+
+
+def extract_fitment(soup: BeautifulSoup) -> list[str]:
+    """Extract BMW chassis codes from anywhere in the page; filter to known B58 chassis."""
+    found: set[str] = set()
+    for code in _CHASSIS_PATTERN.findall(soup.get_text()):
+        if code in KNOWN_CHASSIS:
+            found.add(code)
+    return sorted(found)

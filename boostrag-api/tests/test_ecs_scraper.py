@@ -71,3 +71,25 @@ def test_extract_ecs_price_returns_unknown_when_no_price():
     from ecs_scraper import extract_ecs_price
     soup = BeautifulSoup("<html><body><p>No price info here.</p></body></html>", "lxml")
     assert extract_ecs_price(soup) == "Unknown"
+
+
+# --- extract_fitment ---
+
+def test_extract_fitment_returns_sorted_chassis_codes():
+    from ecs_scraper import extract_fitment
+    soup = load_fixture("ecs_product_intake.html")
+    result = extract_fitment(soup)
+    assert result == ["F30", "G01", "G20", "G29"]
+
+
+def test_extract_fitment_returns_partial_list_when_fewer_chassis():
+    from ecs_scraper import extract_fitment
+    soup = load_fixture("ecs_product_downpipe.html")
+    result = extract_fitment(soup)
+    assert result == ["G20", "G26"]
+
+
+def test_extract_fitment_returns_empty_list_when_no_chassis_found():
+    from ecs_scraper import extract_fitment
+    soup = BeautifulSoup("<html><body><p>No fitment info.</p></body></html>", "lxml")
+    assert extract_fitment(soup) == []
