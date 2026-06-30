@@ -18,8 +18,10 @@ Automatically discover and ingest BMW B58-fitment product pages from ECS Tuning 
 A standalone script that discovers ECS product URLs, deduplicates against already-ingested content, then feeds new URLs into the existing `ingest_url()` pipeline.
 
 **Existing code changes (minimal):**
-- `ingest_urls.py / build_cleaned_text()` — accepts an optional `fitment` kwarg and writes a `Fitment:` header line when provided.
+- `ingest_urls.py / ingest_url()` — accepts optional `fitment: list[str] | None` and `price_override: str | None` kwargs, passes them through to `build_cleaned_text()`.
+- `ingest_urls.py / build_cleaned_text()` — accepts the same optional kwargs; writes `Fitment:` header line when `fitment` is provided; uses `price_override` instead of the regex-extracted price when supplied.
 - No changes to `preprocess.py`, `source_ranker.py`, `chunk_embed.py`, or `main.py`.
+- Calling `ingest_url(url)` without the new kwargs behaves identically to today — fully backward compatible.
 
 ### Components
 
@@ -49,10 +51,11 @@ ecs_scraper.py
            ├── fetch HTML
            ├── extract_ecs_price(soup)   → base price (JSON-LD first, regex fallback)
            ├── extract_fitment(soup)     → ["G20", "G29", "G01"]
-           └── ingest_url(url)           → writes .txt + .json via existing pipeline
+           └── ingest_url(url, fitment=[...], price_override="$349.00")
+                    → writes .txt + .json via existing pipeline
 ```
 
-`ingest_url()` handles all trust scoring, routing, and file writing. The scraper's only additions are the ECS-specific price and fitment extraction, which are passed in before calling `ingest_url()`.
+`ingest_url()` handles all trust scoring, routing, and file writing. The scraper passes `fitment` and `price_override` as kwargs so the existing pipeline writes the correct values without the scraper needing to touch file I/O directly.
 
 ---
 
