@@ -93,3 +93,58 @@ def test_extract_fitment_returns_empty_list_when_no_chassis_found():
     from ecs_scraper import extract_fitment
     soup = BeautifulSoup("<html><body><p>No fitment info.</p></body></html>", "lxml")
     assert extract_fitment(soup) == []
+
+
+# --- URL discovery ---
+
+def test_extract_product_urls_from_page_finds_ecs_sku_links():
+    from ecs_scraper import _extract_product_urls_from_page
+    soup = load_fixture("ecs_category_page.html")
+    urls = _extract_product_urls_from_page(soup, "https://www.ecstuning.com")
+    assert "https://www.ecstuning.com/b-ecs-tuning/s-intake/ES4563456/" in urls
+    assert "https://www.ecstuning.com/b-vrsf/s-charge-pipe/ES7891234/" in urls
+    assert "https://www.ecstuning.com/b-ecs-tuning/s-heat-exchanger/ES1122334/" in urls
+    assert len(urls) == 3
+
+
+def test_get_next_page_url_returns_href_when_present():
+    from ecs_scraper import _get_next_page_url
+    soup = load_fixture("ecs_category_page.html")
+    result = _get_next_page_url(soup)
+    assert result == "https://www.ecstuning.com/b-BMW/c-B58/?page=2"
+
+
+def test_get_next_page_url_returns_none_on_last_page():
+    from ecs_scraper import _get_next_page_url
+    soup = BeautifulSoup("<html><body><p>Last page, no next link.</p></body></html>", "lxml")
+    assert _get_next_page_url(soup) is None
+
+
+def test_get_product_urls_follows_pagination():
+    from ecs_scraper import get_product_urls
+
+    page1_html = (FIXTURES / "ecs_category_page.html").read_text(encoding="utf-8")
+    page2_html = """
+    <html><body>
+      <a href="https://www.ecstuning.com/b-ecs/s-exhaust/ES9999999/">Exhaust</a>
+    </body></html>
+    """
+
+    responses = {
+        "https://www.ecstuning.com/b-BMW/c-B58/": page1_html,
+        "https://www.ecstuning.com/b-BMW/c-B58/?page=2": page2_html,
+    }
+
+    mock_session = MagicMock()
+    def fake_get(url, **kwargs):
+        r = MagicMock()
+        r.text = responses[url]
+        r.raise_for_status = MagicMock()
+        return r
+    mock_session.get.side_effect = fake_get
+
+    with patch("ecs_scraper.time.sleep"):
+        urls = get_product_urls("https://www.ecstuning.com/b-BMW/c-B58/", mock_session)
+
+    assert len(urls) == 4
+    assert "https://www.ecstuning.com/b-ecs/s-exhaust/ES9999999/" in urls

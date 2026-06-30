@@ -73,3 +73,47 @@ def extract_fitment(soup: BeautifulSoup) -> list[str]:
         if code in KNOWN_CHASSIS:
             found.add(code)
     return sorted(found)
+
+
+_ECS_SKU_RE = re.compile(r'/ES\d+/', re.IGNORECASE)
+
+
+def _extract_product_urls_from_page(soup: BeautifulSoup, base_url: str) -> list[str]:
+    """Extract ECS product URLs (containing /ES<digits>/) from a parsed page."""
+    urls: list[str] = []
+    for a in soup.find_all("a", href=True):
+        href: str = a["href"]
+        if _ECS_SKU_RE.search(href):
+            if href.startswith("http"):
+                urls.append(href)
+            else:
+                urls.append(base_url.rstrip("/") + "/" + href.lstrip("/"))
+    return urls
+
+
+def _get_next_page_url(soup: BeautifulSoup) -> str | None:
+    """Return the href of <a rel='next'>, or None if on the last page."""
+    tag = soup.find("a", rel="next")
+    if tag and tag.get("href"):
+        return tag["href"]
+    return None
+
+
+def get_product_urls(category_url: str, session: requests.Session) -> list[str]:
+    """Crawl a category URL with pagination and return all discovered product URLs."""
+    base_url = "/".join(category_url.split("/")[:3])  # https://www.ecstuning.com
+    all_urls: list[str] = []
+    current_url: str | None = category_url
+
+    while current_url:
+        response = session.get(
+            current_url, headers={"User-Agent": USER_AGENT}, timeout=20
+        )
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "lxml")
+        all_urls.extend(_extract_product_urls_from_page(soup, base_url))
+        current_url = _get_next_page_url(soup)
+        if current_url:
+            time.sleep(1.5)
+
+    return list(dict.fromkeys(all_urls))  # deduplicate, preserve order
