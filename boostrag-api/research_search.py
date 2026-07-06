@@ -134,7 +134,9 @@ def generate_m340i_search_queries(user_query: str) -> list[str]:
             unique_queries.append(query)
             seen.add(normalized)
 
-    return unique_queries[:6]
+    import os
+    cap = int(os.getenv("WEB_QUERY_EXPANSION", "2"))
+    return unique_queries[:cap]
 
 
 def score_source(title: str, url: str, content: str, user_query: str) -> tuple[int, str, str]:
@@ -225,13 +227,13 @@ def tavily_research_search(user_query: str, max_results: int = 8) -> list[Resear
             query=query,
             max_results=max_results,
             include_answer=False,
-            include_raw_content=False,
+            include_raw_content=True,
         )
 
         for result in response.get("results", []):
             title = result.get("title") or "Untitled source"
             url = result.get("url") or ""
-            content = result.get("content") or ""
+            content = result.get("raw_content") or result.get("content") or ""
 
             if not url:
                 continue
