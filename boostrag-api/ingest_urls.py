@@ -328,6 +328,7 @@ def ingest_url(
     fitment: list[str] | None = None,
     price_override: str | None = None,
     prefetched_html: str | None = None,
+    provenance: dict | None = None,
 ) -> tuple[Path, Path, dict]:
     for directory in [CLEANED_DIR, LIMITED_DIR, QUARANTINE_DIR, METADATA_DIR]:
         directory.mkdir(parents=True, exist_ok=True)
@@ -385,6 +386,7 @@ def ingest_url(
         "price": price,
         **({"fitment": fitment} if fitment else {}),
         **score,
+        **(provenance or {}),
         "text_file": str(txt_path),
         "metadata_file": str(json_path),
         "date_ingested": datetime.now(timezone.utc).isoformat(),
