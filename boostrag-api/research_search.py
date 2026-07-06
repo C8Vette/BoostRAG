@@ -145,16 +145,18 @@ def score_source(title: str, url: str, content: str, user_query: str) -> tuple[i
     Later, this can become a more formal source-ranker.
     """
     domain = normalize_domain(url)
-    for low_domain, penalty in LOW_TRUST_DOMAINS.items():
-        if low_domain in domain:
-            score += penalty
-            reasons.append(f"low-trust/noisy domain penalty: {low_domain}")
-            break
     text = f"{title} {url} {content}".lower()
     query_terms = [term for term in re.findall(r"[a-zA-Z0-9]+", user_query.lower()) if len(term) > 2]
 
     score = 0
     reasons = []
+
+    # Low-trust/noisy domain penalty.
+    for low_domain, penalty in LOW_TRUST_DOMAINS.items():
+        if low_domain in domain:
+            score += penalty
+            reasons.append(f"low-trust/noisy domain penalty: {low_domain}")
+            break
 
     # Domain trust.
     for trusted_domain, weight in TRUSTED_AUTOMOTIVE_DOMAINS.items():
