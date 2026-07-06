@@ -134,7 +134,6 @@ def generate_m340i_search_queries(user_query: str) -> list[str]:
             unique_queries.append(query)
             seen.add(normalized)
 
-    import os
     cap = int(os.getenv("WEB_QUERY_EXPANSION", "2"))
     return unique_queries[:cap]
 

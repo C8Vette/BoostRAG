@@ -31,9 +31,7 @@ def test_score_source_rewards_trusted_domain():
 
 def test_query_expansion_respects_env_cap(monkeypatch):
     monkeypatch.setenv("WEB_QUERY_EXPANSION", "2")
-    from importlib import reload
     import research_search
-    reload(research_search)
     queries = research_search.generate_m340i_search_queries("downpipe options")
     assert len(queries) == 2
 
