@@ -24,6 +24,14 @@ def test_blacklist_add_and_check(tmp_path, monkeypatch):
     assert p.is_blacklisted("https://bad.com/other") is True
 
 
+def test_add_to_blacklist_tolerates_malformed_existing_file(tmp_path, monkeypatch):
+    p = _wire(tmp_path, monkeypatch)
+    # a valid JSON file that lacks the expected urls/domains keys
+    (tmp_path / "blacklist.json").write_text("{}", encoding="utf-8")
+    p.add_to_blacklist("https://bad.com/x")  # must not raise KeyError
+    assert p.is_blacklisted("https://bad.com/x") is True
+
+
 def test_log_answer_appends_jsonl(tmp_path, monkeypatch):
     p = _wire(tmp_path, monkeypatch)
     p.log_answer("q1", "web", "ans", [{"url": "u", "score": 9, "ingested": True}])

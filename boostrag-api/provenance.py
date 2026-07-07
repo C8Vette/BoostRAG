@@ -37,11 +37,13 @@ def is_blacklisted(url: str) -> bool:
 def add_to_blacklist(url: str) -> None:
     BLACKLIST_PATH.parent.mkdir(parents=True, exist_ok=True)
     data = _load_json(BLACKLIST_PATH, {"urls": [], "domains": []})
-    if url not in data["urls"]:
-        data["urls"].append(url)
+    urls = data.setdefault("urls", [])
+    domains = data.setdefault("domains", [])
+    if url not in urls:
+        urls.append(url)
     dom = _domain(url)
-    if dom not in data["domains"]:
-        data["domains"].append(dom)
+    if dom not in domains:
+        domains.append(dom)
     BLACKLIST_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
