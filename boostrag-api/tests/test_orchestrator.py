@@ -92,6 +92,43 @@ def test_web_empty_falls_back_to_corpus(tmp_path, monkeypatch):
     ing.assert_not_called()
 
 
+def test_confident_but_insufficient_answer_escalates_to_web(tmp_path, monkeypatch):
+    import orchestrator
+    _patch_common(orchestrator, monkeypatch, tmp_path)
+    monkeypatch.setenv("DAILY_WEB_SEARCH_CAP", "15")
+    corpus_ctx = [RetrievedContext(text="body", metadata={"product": "P", "url": "u"},
+                                   origin="corpus", distance=0.88)]
+    web_ctx = [RetrievedContext(text="web body", metadata={"title": "T", "url": "wu"},
+                                origin="web", trust_score=11, url="wu")]
+    with patch.object(orchestrator.CorpusRetriever, "retrieve", return_value=corpus_ctx), \
+         patch.object(orchestrator, "assess_corpus_confidence",
+                      return_value=Verdict(True, 0.88, 1)), \
+         patch.object(orchestrator, "generate_answer",
+                      side_effect=["I couldn't find that in the retrieved evidence.", "web answer"]), \
+         patch.object(orchestrator.WebRetriever, "retrieve", return_value=web_ctx), \
+         patch.object(orchestrator, "maybe_ingest_web_sources",
+                      return_value=[{"url": "wu", "score": 11, "ingested": True}]):
+        result = orchestrator.answer_question("q")
+    assert result.origin == "web"
+    assert result.answer == "web answer"
+
+
+def test_confident_sufficient_answer_does_not_escalate(tmp_path, monkeypatch):
+    import orchestrator
+    _patch_common(orchestrator, monkeypatch, tmp_path)
+    monkeypatch.setenv("DAILY_WEB_SEARCH_CAP", "15")
+    corpus_ctx = [RetrievedContext(text="body", metadata={"product": "P", "url": "u"},
+                                   origin="corpus", distance=0.3)]
+    with patch.object(orchestrator.CorpusRetriever, "retrieve", return_value=corpus_ctx), \
+         patch.object(orchestrator, "assess_corpus_confidence",
+                      return_value=Verdict(True, 0.3, 1)), \
+         patch.object(orchestrator, "generate_answer", return_value="corpus answer"), \
+         patch.object(orchestrator.WebRetriever, "retrieve") as web:
+        result = orchestrator.answer_question("q")
+    assert result.origin == "corpus"
+    web.assert_not_called()
+
+
 def test_fuse_degraded_corpus_answer_is_not_cached(tmp_path, monkeypatch):
     import orchestrator, answer_cache
     _patch_common(orchestrator, monkeypatch, tmp_path)

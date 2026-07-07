@@ -86,6 +86,7 @@ def build_chunk_records(documents: List[Dict[str, str]]) -> List[Dict]:
                         "url": doc.get("url", ""),
                         "price": doc.get("price", ""),
                         "source_file": doc.get("source_file", ""),
+                        "trust_tier": doc.get("trust_tier", ""),
                         "chunk_index": chunk_idx,
                     },
                 }

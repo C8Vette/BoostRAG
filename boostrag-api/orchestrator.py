@@ -16,6 +16,25 @@ from provenance import (
 
 NO_ANSWER = "I don't have a good answer for this yet."
 
+INSUFFICIENT_MARKERS = (
+    "not stated",
+    "couldn't find",
+    "could not find",
+    "insufficient evidence",
+    "not enough information",
+    "not enough evidence",
+    "do not have enough",
+    "don't have enough",
+    "no relevant information",
+    "not in the retrieved evidence",
+)
+
+
+def _looks_insufficient(answer: str) -> bool:
+    """True if a grounded answer admits the evidence didn't cover the question."""
+    low = (answer or "").lower()
+    return any(marker in low for marker in INSUFFICIENT_MARKERS)
+
 
 def _corpus_answer(
     query: str,
@@ -48,6 +67,28 @@ def _sources_from_contexts(contexts: list[RetrievedContext]) -> list[dict]:
     return out
 
 
+def _try_web_answer(query: str, confidence: dict) -> AnswerResult | None:
+    """Attempt a web-sourced answer. Returns None if the daily fuse is blown or web has nothing."""
+    cap = int(os.getenv("DAILY_WEB_SEARCH_CAP", "15"))
+    if web_searches_today() >= cap:
+        return None
+    increment_web_search()
+    web_ctx = WebRetriever().retrieve(query)
+    if not web_ctx:
+        return None
+    answer = generate_answer(query, web_ctx)
+    sources = _sources_from_contexts(web_ctx)
+    ingest_records = maybe_ingest_web_sources(query, web_ctx)
+    logged_sources = [
+        {**s, "ingested": rec["ingested"]}
+        for s, rec in zip(sources, ingest_records)
+    ]
+    log_answer(query, "web", answer, logged_sources)
+    result = AnswerResult(answer, "web", sources, confidence)
+    set_cached(query, result.__dict__)
+    return result
+
+
 def answer_question(query: str, top_k: int = 3) -> AnswerResult:
     cached = get_cached(query)
     if cached:
@@ -58,29 +99,24 @@ def answer_question(query: str, top_k: int = 3) -> AnswerResult:
     confidence = {"sufficient": verdict.sufficient,
                   "nearest_distance": verdict.nearest_distance}
 
-    # Corpus is confident -> answer from it.
     if verdict.sufficient:
-        return _corpus_answer(query, corpus_ctx, confidence, cache=True)
-
-    # Corpus weak -> try web if the daily fuse allows it.
-    cap = int(os.getenv("DAILY_WEB_SEARCH_CAP", "15"))
-    if web_searches_today() < cap:
-        increment_web_search()
-        web_ctx = WebRetriever().retrieve(query)
-        if web_ctx:
-            answer = generate_answer(query, web_ctx)
-            sources = _sources_from_contexts(web_ctx)
-            ingest_records = maybe_ingest_web_sources(query, web_ctx)
-            logged_sources = [
-                {**s, "ingested": rec["ingested"]}
-                for s, rec in zip(sources, ingest_records)
-            ]
-            log_answer(query, "web", answer, logged_sources)
-            result = AnswerResult(answer, "web", sources, confidence)
+        answer = generate_answer(query, corpus_ctx)
+        insufficient = _looks_insufficient(answer)
+        if insufficient:
+            web = _try_web_answer(query, confidence)
+            if web is not None:
+                return web
+        sources = _sources_from_contexts(corpus_ctx)
+        log_answer(query, "corpus", answer, sources)
+        result = AnswerResult(answer, "corpus", sources, confidence)
+        if not insufficient:
             set_cached(query, result.__dict__)
-            return result
+        return result
 
-    # Fuse tripped or no web results -> best corpus answer, else honest none.
+    web = _try_web_answer(query, confidence)
+    if web is not None:
+        return web
+
     if corpus_ctx:
         return _corpus_answer(query, corpus_ctx, confidence, cache=False)
 
