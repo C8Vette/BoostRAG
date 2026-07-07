@@ -13,6 +13,7 @@ from provenance import (
     increment_web_search,
     maybe_ingest_web_sources,
 )
+from source_ranker import tier_for_url
 
 NO_ANSWER = "I don't have a good answer for this yet."
 
@@ -31,8 +32,12 @@ INSUFFICIENT_MARKERS = (
 
 
 def _looks_insufficient(answer: str) -> bool:
-    """True if a grounded answer admits the evidence didn't cover the question."""
-    low = (answer or "").lower()
+    """True if a grounded answer admits the evidence didn't cover the question.
+
+    Normalizes the typographic apostrophe (U+2019) the model emits so markers
+    like "couldn't find" match regardless of quote style.
+    """
+    low = (answer or "").lower().replace("’", "'")
     return any(marker in low for marker in INSUFFICIENT_MARKERS)
 
 
@@ -56,11 +61,18 @@ def _sources_from_contexts(contexts: list[RetrievedContext]) -> list[dict]:
     out = []
     for c in contexts:
         meta = c.metadata or {}
+        url = c.url or meta.get("url")
+        # Web sources carry the research scorer's label; corpus sources derive
+        # their tier from the domain at query time (legacy files lack the header).
+        if c.origin == "corpus":
+            trust_tier = tier_for_url(url) if url else None
+        else:
+            trust_tier = meta.get("trust_tier")
         out.append({
             "product": meta.get("product", meta.get("title")),
-            "url": c.url or meta.get("url"),
+            "url": url,
             "origin": c.origin,
-            "trust_tier": meta.get("trust_tier"),
+            "trust_tier": trust_tier,
             "price": meta.get("price"),
             "text_preview": (c.text or "")[:350],
         })

@@ -153,6 +153,20 @@ def domain_matches(domain: str, approved_domains: set[str]) -> bool:
     )
 
 
+def tier_for_url(url: str) -> str:
+    """Display trust tier for a source, derived purely from its domain.
+
+    Used at query time so corpus sources — including legacy files that predate
+    the ``Trust Tier`` header — still show a tier chip in the UI.
+    """
+    domain = normalize_domain(url)
+    if domain_matches(domain, HIGH_TRUST_DOMAINS):
+        return "Tier 1"
+    if domain_matches(domain, MEDIUM_TRUST_DOMAINS):
+        return "Tier 2"
+    return "Tier 3"
+
+
 def classify_source_type(url: str, title: str, text: str) -> str:
     domain = normalize_domain(url)
     haystack = f"{domain}\n{title}\n{text}".lower()
