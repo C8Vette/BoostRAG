@@ -1,6 +1,6 @@
 import sys
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from rag_types import RetrievedContext, Verdict
@@ -71,3 +71,21 @@ def test_cache_short_circuits(tmp_path, monkeypatch):
         result = orchestrator.answer_question("q")
     corpus.assert_not_called()
     assert result.answer == "cached"
+
+
+def test_web_empty_falls_back_to_corpus(tmp_path, monkeypatch):
+    import orchestrator
+    _patch_common(orchestrator, monkeypatch, tmp_path)
+    monkeypatch.setenv("DAILY_WEB_SEARCH_CAP", "15")
+    corpus_ctx = [RetrievedContext(text="body", metadata={"product": "P", "url": "u"},
+                                   origin="corpus", distance=1.5)]
+    with patch.object(orchestrator.CorpusRetriever, "retrieve", return_value=corpus_ctx), \
+         patch.object(orchestrator, "assess_corpus_confidence",
+                      return_value=Verdict(False, 1.5, 0)), \
+         patch.object(orchestrator.WebRetriever, "retrieve", return_value=[]), \
+         patch.object(orchestrator, "generate_answer", return_value="corpus fallback answer"), \
+         patch.object(orchestrator, "maybe_ingest_web_sources") as ing:
+        result = orchestrator.answer_question("q")
+    assert result.origin == "corpus"
+    assert result.answer == "corpus fallback answer"
+    ing.assert_not_called()

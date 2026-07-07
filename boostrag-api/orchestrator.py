@@ -60,9 +60,11 @@ def answer_question(query: str, top_k: int = 3) -> AnswerResult:
             answer = generate_answer(query, web_ctx)
             sources = _sources_from_contexts(web_ctx)
             ingest_records = maybe_ingest_web_sources(query, web_ctx)
-            for s, rec in zip(sources, ingest_records):
-                s["ingested"] = rec["ingested"]
-            log_answer(query, "web", answer, sources)
+            logged_sources = [
+                {**s, "ingested": rec["ingested"]}
+                for s, rec in zip(sources, ingest_records)
+            ]
+            log_answer(query, "web", answer, logged_sources)
             result = AnswerResult(answer, "web", sources, confidence)
             set_cached(query, result.__dict__)
             return result
