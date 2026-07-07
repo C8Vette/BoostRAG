@@ -89,10 +89,11 @@ def maybe_ingest_web_sources(query: str, contexts: list[RetrievedContext]) -> li
         url = ctx.url or ""
         score = ctx.trust_score if ctx.trust_score is not None else -999
         ingested = False
+        route = None
         if url and score >= min_score and not is_blacklisted(url):
             title = ctx.metadata.get("title", "Live Web Source")
             try:
-                ingest_url(
+                _, _, meta = ingest_url(
                     url,
                     prefetched_html=_text_to_html(title, ctx.text),
                     provenance={
@@ -102,8 +103,10 @@ def maybe_ingest_web_sources(query: str, contexts: list[RetrievedContext]) -> li
                         "ingested_at": datetime.now(timezone.utc).isoformat(),
                     },
                 )
-                ingested = True
+                route = meta.get("route")
+                ingested = (route == "cleaned")
             except Exception:
+                route = None
                 ingested = False  # thin/blocked content — best-effort, never raises
-        records.append({"url": url, "score": score, "ingested": ingested})
+        records.append({"url": url, "score": score, "ingested": ingested, "route": route})
     return records

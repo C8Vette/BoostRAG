@@ -159,12 +159,44 @@ def ensure_chroma_collection() -> None:
         chunk_records = build_chunk_records(docs)
         store_in_chroma(chunk_records)
 
-if __name__ == "__main__":
+def rebuild_chroma_collection() -> int:
+    """Delete and rebuild the corpus collection from data/cleaned/. Returns chunk count.
+
+    Full rebuild (rather than incremental upsert) because build_chunk_records uses
+    positional IDs; a from-scratch rebuild keeps IDs consistent and picks up any
+    newly auto-ingested files. Run manually or on a schedule to close the batch flywheel.
+    """
+    chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
+    try:
+        chroma_client.delete_collection(name=COLLECTION_NAME)
+    except Exception:
+        pass
     docs = load_documents()
-    print(f"Loaded {len(docs)} documents.")
+    records = build_chunk_records(docs)
+    store_in_chroma(records)
+    return len(records)
 
-    chunk_records = build_chunk_records(docs)
-    print(f"Built {len(chunk_records)} chunks.")
 
-    store_in_chroma(chunk_records)
-    print("Stored chunks in Chroma successfully.")
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Build or rebuild the BoostRAG Chroma collection.")
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help="Delete and rebuild the collection from data/cleaned/ (batch flywheel).",
+    )
+    args = parser.parse_args()
+
+    if args.rebuild:
+        chunk_count = rebuild_chroma_collection()
+        print(f"Rebuilt Chroma collection with {chunk_count} chunks.")
+    else:
+        docs = load_documents()
+        print(f"Loaded {len(docs)} documents.")
+
+        chunk_records = build_chunk_records(docs)
+        print(f"Built {len(chunk_records)} chunks.")
+
+        store_in_chroma(chunk_records)
+        print("Stored chunks in Chroma successfully.")

@@ -62,9 +62,25 @@ def test_maybe_ingest_respects_trust_gate_and_blacklist(tmp_path, monkeypatch):
                          trust_score=11, url="https://banned.com/x"),
     ]
     with patch.object(p, "ingest_url") as mock_ingest:
-        mock_ingest.return_value = (Path("t.txt"), Path("t.json"), {})
+        mock_ingest.return_value = (Path("t.txt"), Path("t.json"), {"route": "cleaned"})
         records = p.maybe_ingest_web_sources("q", contexts)
     # only the good, high-score, non-blacklisted source is ingested
     assert mock_ingest.call_count == 1
     ingested = [r for r in records if r["ingested"]]
     assert len(ingested) == 1 and ingested[0]["url"] == "https://good.com/a"
+
+
+def test_maybe_ingest_reports_not_ingested_when_routed_to_quarantine(tmp_path, monkeypatch):
+    p = _wire(tmp_path, monkeypatch)
+    monkeypatch.setenv("AUTO_INGEST_MIN_SCORE", "9")
+    contexts = [
+        RetrievedContext(text="thin content", metadata={"title": "D"}, origin="web",
+                         trust_score=11, url="https://risky.com/d"),
+    ]
+    with patch.object(p, "ingest_url") as mock_ingest:
+        mock_ingest.return_value = (Path("t.txt"), Path("t.json"), {"route": "quarantine"})
+        records = p.maybe_ingest_web_sources("q", contexts)
+    assert mock_ingest.call_count == 1
+    assert len(records) == 1
+    assert records[0]["ingested"] is False
+    assert records[0]["route"] == "quarantine"
