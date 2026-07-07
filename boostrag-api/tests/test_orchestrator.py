@@ -16,7 +16,7 @@ def _patch_common(orch, monkeypatch, tmp_path):
 
 
 def test_corpus_path_when_confident(tmp_path, monkeypatch):
-    import orchestrator
+    import orchestrator, answer_cache
     _patch_common(orchestrator, monkeypatch, tmp_path)
     corpus_ctx = [RetrievedContext(text="body", metadata={"product": "P", "url": "u"},
                                    origin="corpus", distance=0.3)]
@@ -29,6 +29,7 @@ def test_corpus_path_when_confident(tmp_path, monkeypatch):
     assert result.origin == "corpus"
     assert result.answer == "corpus answer"
     web.assert_not_called()
+    assert answer_cache.get_cached("q") is not None
 
 
 def test_web_fallback_when_corpus_weak(tmp_path, monkeypatch):
@@ -89,3 +90,21 @@ def test_web_empty_falls_back_to_corpus(tmp_path, monkeypatch):
     assert result.origin == "corpus"
     assert result.answer == "corpus fallback answer"
     ing.assert_not_called()
+
+
+def test_fuse_degraded_corpus_answer_is_not_cached(tmp_path, monkeypatch):
+    import orchestrator, answer_cache
+    _patch_common(orchestrator, monkeypatch, tmp_path)
+    monkeypatch.setenv("DAILY_WEB_SEARCH_CAP", "0")  # fuse already blown
+    corpus_ctx = [RetrievedContext(text="body", metadata={"product": "P", "url": "u"},
+                                   origin="corpus", distance=1.5)]
+    with patch.object(orchestrator.CorpusRetriever, "retrieve", return_value=corpus_ctx), \
+         patch.object(orchestrator, "assess_corpus_confidence",
+                      return_value=Verdict(False, 1.5, 0)), \
+         patch.object(orchestrator.WebRetriever, "retrieve") as web, \
+         patch.object(orchestrator, "generate_answer", return_value="degraded corpus answer"):
+        result = orchestrator.answer_question("q")
+    web.assert_not_called()
+    assert result.origin == "corpus"
+    assert result.answer == "degraded corpus answer"
+    assert answer_cache.get_cached("q") is None

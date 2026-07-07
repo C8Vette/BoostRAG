@@ -87,7 +87,7 @@ def maybe_ingest_web_sources(query: str, contexts: list[RetrievedContext]) -> li
     records: list[dict] = []
     for ctx in contexts:
         url = ctx.url or ""
-        score = ctx.trust_score if ctx.trust_score is not None else -999
+        score = ctx.trust_score if ctx.trust_score is not None else float("-inf")
         ingested = False
         route = None
         if url and score >= min_score and not is_blacklisted(url):

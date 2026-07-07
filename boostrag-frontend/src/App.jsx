@@ -76,7 +76,6 @@ function App() {
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState([]);
   const [origin, setOrigin] = useState("");
-  const [confidence, setConfidence] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -93,7 +92,6 @@ function App() {
     setAnswer("");
     setSources([]);
     setOrigin("");
-    setConfidence(null);
 
     try {
       const apiBaseUrl =
@@ -119,7 +117,6 @@ function App() {
       setAnswer(data.answer);
       setSources(data.sources || []);
       setOrigin(data.origin || "");
-      setConfidence(data.confidence ?? null);
       setQuery(cleanedQuery);
     } catch (err) {
       setError(
@@ -156,7 +153,6 @@ function App() {
           answer={answer}
           sources={sources}
           origin={origin}
-          confidence={confidence}
           error={error}
         />
 
@@ -391,7 +387,7 @@ function SearchBand({ query, setQuery, askBoostRAG, isLoading }) {
   );
 }
 
-function Dashboard({ answer, sources, origin, confidence, error }) {
+function Dashboard({ answer, sources, origin, error }) {
   return (
     <section className="relative z-10 mx-auto grid max-w-[1580px] gap-6 px-5 pt-3 pb-2 lg:grid-cols-[215px_1fr_390px] lg:px-10">
       <CategoryPanel />
@@ -399,7 +395,6 @@ function Dashboard({ answer, sources, origin, confidence, error }) {
         answer={answer}
         sources={sources}
         origin={origin}
-        confidence={confidence}
         error={error}
       />
       <TrendingPanel />
@@ -430,7 +425,7 @@ function CategoryPanel() {
   );
 }
 
-function OriginBadge({ origin, confidence }) {
+function OriginBadge({ origin }) {
   if (!origin) return null;
 
   return (
@@ -449,17 +444,11 @@ function OriginBadge({ origin, confidence }) {
         : origin === "web"
         ? "● Live web research — less vetted"
         : "● No confident answer yet"}
-      {typeof confidence === "number" && (
-        <span className="opacity-70">
-          {" "}
-          ({Math.round(confidence * 100)}%)
-        </span>
-      )}
     </span>
   );
 }
 
-function SourceBackedAnswers({ answer, sources, origin, confidence, error }) {
+function SourceBackedAnswers({ answer, sources, origin, error }) {
   if (error) {
     return (
       <Panel className="p-4">
@@ -478,7 +467,7 @@ function SourceBackedAnswers({ answer, sources, origin, confidence, error }) {
 
         <div className="space-y-4">
           <div>
-            <OriginBadge origin={origin} confidence={confidence} />
+            <OriginBadge origin={origin} />
           </div>
 
           {origin === "none" ? (

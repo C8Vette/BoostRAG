@@ -17,6 +17,22 @@ from provenance import (
 NO_ANSWER = "I don't have a good answer for this yet."
 
 
+def _corpus_answer(
+    query: str,
+    corpus_ctx: list[RetrievedContext],
+    confidence: dict,
+    *,
+    cache: bool,
+) -> AnswerResult:
+    answer = generate_answer(query, corpus_ctx)
+    sources = _sources_from_contexts(corpus_ctx)
+    log_answer(query, "corpus", answer, sources)
+    result = AnswerResult(answer, "corpus", sources, confidence)
+    if cache:
+        set_cached(query, result.__dict__)
+    return result
+
+
 def _sources_from_contexts(contexts: list[RetrievedContext]) -> list[dict]:
     out = []
     for c in contexts:
@@ -44,12 +60,7 @@ def answer_question(query: str, top_k: int = 3) -> AnswerResult:
 
     # Corpus is confident -> answer from it.
     if verdict.sufficient:
-        answer = generate_answer(query, corpus_ctx)
-        sources = _sources_from_contexts(corpus_ctx)
-        log_answer(query, "corpus", answer, sources)
-        result = AnswerResult(answer, "corpus", sources, confidence)
-        set_cached(query, result.__dict__)
-        return result
+        return _corpus_answer(query, corpus_ctx, confidence, cache=True)
 
     # Corpus weak -> try web if the daily fuse allows it.
     cap = int(os.getenv("DAILY_WEB_SEARCH_CAP", "15"))
@@ -71,12 +82,7 @@ def answer_question(query: str, top_k: int = 3) -> AnswerResult:
 
     # Fuse tripped or no web results -> best corpus answer, else honest none.
     if corpus_ctx:
-        answer = generate_answer(query, corpus_ctx)
-        sources = _sources_from_contexts(corpus_ctx)
-        log_answer(query, "corpus", answer, sources)
-        result = AnswerResult(answer, "corpus", sources, confidence)
-        set_cached(query, result.__dict__)
-        return result
+        return _corpus_answer(query, corpus_ctx, confidence, cache=False)
 
     log_answer(query, "none", NO_ANSWER, [])
     return AnswerResult(NO_ANSWER, "none", [], confidence)
