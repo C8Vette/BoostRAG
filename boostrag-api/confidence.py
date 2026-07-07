@@ -7,7 +7,7 @@ from rag_types import RetrievedContext, Verdict
 
 def assess_corpus_confidence(contexts: list[RetrievedContext]) -> Verdict:
     """Decide whether the local corpus can answer confidently, from chunk distances."""
-    max_distance = float(os.getenv("MAX_DISTANCE", "1.0"))
+    max_distance = float(os.getenv("MAX_DISTANCE", "0.95"))  # calibrated 2026-07-04; see .env.example
     min_strong = int(os.getenv("MIN_STRONG_CHUNKS", "1"))
 
     distances = [c.distance for c in contexts if c.distance is not None]
