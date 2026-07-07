@@ -143,6 +143,15 @@ After a **web** answer is delivered (never blocks the response), `provenance.py`
    { "origin": "live", "trigger_query": "...", "ingested_at": "ISO-8601", "trust_score": 11 }
    ```
 
+> **Deferred visibility (batch re-embed).** `ingest_url` writes the source into `data/cleaned/`
+> but does **not** embed it — the read path (ChromaDB) only sees a source after a re-embed. A
+> `rebuild_corpus` step (CLI `python chunk_embed.py --rebuild`, run manually or on a schedule)
+> re-embeds `data/cleaned/` so auto-ingested sources become retrievable. So the flywheel is
+> **batch**, not live: the corpus grows between rebuilds, not within a single request. Also,
+> because the numeric research trust score is independent of `source_ranker`'s tier routing, an
+> auto-ingest only counts as `ingested: true` when the source actually lands in `cleaned/`
+> (the RAG-visible tier); `limited`/`quarantine` placements are logged but not claimed as ingested.
+
 **Paper trail** — every answer (corpus or web) appends one line to `data/provenance/queries.jsonl`:
 ```jsonc
 {"ts":"...","query":"...","origin":"web","answer_preview":"...",
@@ -173,7 +182,8 @@ trivial to migrate post-funding.
 2. **Answer cache** (`data/cache/answers.json`, TTL) — repeated/demo questions cost $0 after first.
 3. `DAILY_WEB_SEARCH_CAP=15` — hard daily fuse; past it, fall back to best corpus answer with a
    quiet "live research paused for today" note. A viral link cannot run up a bill.
-4. **Flywheel compounding** — auto-ingested topics become free corpus hits thereafter.
+4. **Flywheel compounding (batch)** — auto-ingested topics become free corpus hits after the next
+   `rebuild_corpus` re-embed (see §8 "Deferred visibility"), not within the same request.
 
 **Realistic bill:** inside Tavily free tier + pennies of OpenAI ≈ **$0–2/month**, with a hard stop.
 
