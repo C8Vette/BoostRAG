@@ -75,6 +75,7 @@ function App() {
   const [query, setQuery] = useState("");
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState([]);
+  const [origin, setOrigin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -90,6 +91,7 @@ function App() {
     setError("");
     setAnswer("");
     setSources([]);
+    setOrigin("");
 
     try {
       const apiBaseUrl =
@@ -114,6 +116,7 @@ function App() {
 
       setAnswer(data.answer);
       setSources(data.sources || []);
+      setOrigin(data.origin || "");
       setQuery(cleanedQuery);
     } catch (err) {
       setError(
@@ -146,7 +149,12 @@ function App() {
           isLoading={isLoading}
         />
 
-        <Dashboard answer={answer} sources={sources} error={error} />
+        <Dashboard
+          answer={answer}
+          sources={sources}
+          origin={origin}
+          error={error}
+        />
 
         <FooterStrip />
       </div>
@@ -379,11 +387,16 @@ function SearchBand({ query, setQuery, askBoostRAG, isLoading }) {
   );
 }
 
-function Dashboard({ answer, sources, error }) {
+function Dashboard({ answer, sources, origin, error }) {
   return (
     <section className="relative z-10 mx-auto grid max-w-[1580px] gap-6 px-5 pt-3 pb-2 lg:grid-cols-[215px_1fr_390px] lg:px-10">
       <CategoryPanel />
-      <SourceBackedAnswers answer={answer} sources={sources} error={error} />
+      <SourceBackedAnswers
+        answer={answer}
+        sources={sources}
+        origin={origin}
+        error={error}
+      />
       <TrendingPanel />
     </section>
   );
@@ -412,7 +425,30 @@ function CategoryPanel() {
   );
 }
 
-function SourceBackedAnswers({ answer, sources, error }) {
+function OriginBadge({ origin }) {
+  if (!origin) return null;
+
+  return (
+    <span
+      className={
+        "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium mb-2 " +
+        (origin === "corpus"
+          ? "bg-green-500/15 text-green-400"
+          : origin === "web"
+          ? "bg-blue-500/15 text-blue-400"
+          : "bg-neutral-500/15 text-neutral-400")
+      }
+    >
+      {origin === "corpus"
+        ? "● From your trusted corpus"
+        : origin === "web"
+        ? "● Live web research — less vetted"
+        : "● No confident answer yet"}
+    </span>
+  );
+}
+
+function SourceBackedAnswers({ answer, sources, origin, error }) {
   if (error) {
     return (
       <Panel className="p-4">
@@ -430,67 +466,84 @@ function SourceBackedAnswers({ answer, sources, error }) {
         <PanelHeader title="BoostRAG Answer" />
 
         <div className="space-y-4">
-          <div className="border border-zinc-800 bg-black/50 p-5 text-[15px] font-medium leading-7 text-zinc-200">
-            <ReactMarkdown
-              components={{
-                strong: ({ children }) => (
-                  <strong className="font-black text-white">{children}</strong>
-                ),
-                p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
-                ul: ({ children }) => (
-                  <ul className="mb-3 list-disc space-y-1 pl-5">{children}</ul>
-                ),
-                li: ({ children }) => <li>{children}</li>,
-              }}
-            >
-              {answer}
-            </ReactMarkdown>
-          </div>
-
           <div>
-            <h3 className="mb-3 text-sm font-black uppercase tracking-wide text-yellow-400">
-              Sources Used
-            </h3>
-
-            <div className="grid gap-3 xl:grid-cols-2">
-              {sources.map((source, index) => (
-                <article
-                  key={`${source.source_file}-${index}`}
-                  className="border border-zinc-800 bg-zinc-950/90 p-4"
-                >
-                  <p className="text-[11px] font-black uppercase text-red-600">
-                    {source.category || "Source"}
-                  </p>
-
-                  <h4 className="mt-1 text-[15px] font-black leading-5 text-white">
-                    {source.product || source.source_file || "Unknown source"}
-                  </h4>
-
-                  <p className="mt-2 text-[12px] font-semibold text-zinc-500">
-                    {source.brand || "Unknown brand"}
-                    {source.price ? ` • ${source.price}` : ""}
-                  </p>
-
-                  {source.text_preview && (
-                    <p className="mt-3 line-clamp-3 text-[12px] leading-5 text-zinc-400">
-                      {source.text_preview}
-                    </p>
-                  )}
-
-                  {source.url && (
-                    <a
-                      href={source.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-3 inline-block text-[12px] font-black uppercase text-yellow-400 hover:text-yellow-300"
-                    >
-                      View Source
-                    </a>
-                  )}
-                </article>
-              ))}
-            </div>
+            <OriginBadge origin={origin} />
           </div>
+
+          {origin === "none" ? (
+            <p className="text-neutral-400 italic">
+              BoostRAG doesn't have a confident answer for this yet.
+            </p>
+          ) : (
+            <>
+              <div className="border border-zinc-800 bg-black/50 p-5 text-[15px] font-medium leading-7 text-zinc-200">
+                <ReactMarkdown
+                  components={{
+                    strong: ({ children }) => (
+                      <strong className="font-black text-white">{children}</strong>
+                    ),
+                    p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                    ul: ({ children }) => (
+                      <ul className="mb-3 list-disc space-y-1 pl-5">{children}</ul>
+                    ),
+                    li: ({ children }) => <li>{children}</li>,
+                  }}
+                >
+                  {answer}
+                </ReactMarkdown>
+              </div>
+
+              <div>
+                <h3 className="mb-3 text-sm font-black uppercase tracking-wide text-yellow-400">
+                  Sources Used
+                </h3>
+
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {sources.map((source, index) => (
+                    <article
+                      key={`${source.source_file}-${index}`}
+                      className="border border-zinc-800 bg-zinc-950/90 p-4"
+                    >
+                      <p className="text-[11px] font-black uppercase text-red-600">
+                        {source.category || "Source"}
+                        {source.trust_tier && (
+                          <span className="ml-2 rounded bg-neutral-700/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-neutral-300">
+                            {source.trust_tier}
+                          </span>
+                        )}
+                      </p>
+
+                      <h4 className="mt-1 text-[15px] font-black leading-5 text-white">
+                        {source.product || source.source_file || "Unknown source"}
+                      </h4>
+
+                      <p className="mt-2 text-[12px] font-semibold text-zinc-500">
+                        {source.brand || "Unknown brand"}
+                        {source.price ? ` • ${source.price}` : ""}
+                      </p>
+
+                      {source.text_preview && (
+                        <p className="mt-3 line-clamp-3 text-[12px] leading-5 text-zinc-400">
+                          {source.text_preview}
+                        </p>
+                      )}
+
+                      {source.url && (
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-block text-[12px] font-black uppercase text-yellow-400 hover:text-yellow-300"
+                        >
+                          View Source
+                        </a>
+                      )}
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </Panel>
     );

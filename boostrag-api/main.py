@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from typing import Any
-
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from answer import answer_query
+from orchestrator import answer_question
 from chunk_embed import ensure_chroma_collection
 
 
@@ -37,12 +35,15 @@ class Source(BaseModel):
     brand: str | None = None
     url: str | None = None
     price: str | None = None
-    distance: float | None = None
+    origin: str | None = None
+    trust_tier: str | None = None
     text_preview: str | None = None
 
 
 class AskResponse(BaseModel):
     answer: str
+    origin: str
+    confidence: dict = {}
     sources: list[Source]
 
 
@@ -67,37 +68,14 @@ def ask_boostrag(request: AskRequest) -> AskResponse:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
     try:
-        answer_text, chunks = answer_query(query=query, top_k=request.top_k)
-
-        sources: list[Source] = []
-
-        seen: set[tuple[str | None, str | None]] = set()
-
-        for chunk in chunks:
-            metadata: dict[str, Any] = chunk.get("metadata", {})
-            source_file = metadata.get("source_file")
-            product = metadata.get("product")
-
-            key = (source_file, product)
-            if key in seen:
-                continue
-            seen.add(key)
-
-            sources.append(
-                Source(
-                    source_file=source_file,
-                    product=product,
-                    category=metadata.get("category"),
-                    brand=metadata.get("brand"),
-                    url=metadata.get("url"),
-                    price=metadata.get("price"),
-                    distance=chunk.get("distance"),
-                    text_preview=chunk.get("text", "")[:350],
-                )
-            )
-
-        return AskResponse(answer=answer_text, sources=sources)
-
+        result = answer_question(query=query, top_k=request.top_k)
+        sources = [Source(**{k: v for k, v in s.items() if k in Source.model_fields}) for s in result.sources]
+        return AskResponse(
+            answer=result.answer,
+            origin=result.origin,
+            confidence=result.confidence,
+            sources=sources,
+        )
     except Exception as exc:
         raise HTTPException(
             status_code=500,

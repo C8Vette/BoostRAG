@@ -134,7 +134,8 @@ def generate_m340i_search_queries(user_query: str) -> list[str]:
             unique_queries.append(query)
             seen.add(normalized)
 
-    return unique_queries[:6]
+    cap = int(os.getenv("WEB_QUERY_EXPANSION", "2"))
+    return unique_queries[:cap]
 
 
 def score_source(title: str, url: str, content: str, user_query: str) -> tuple[int, str, str]:
@@ -145,16 +146,18 @@ def score_source(title: str, url: str, content: str, user_query: str) -> tuple[i
     Later, this can become a more formal source-ranker.
     """
     domain = normalize_domain(url)
-    for low_domain, penalty in LOW_TRUST_DOMAINS.items():
-        if low_domain in domain:
-            score += penalty
-            reasons.append(f"low-trust/noisy domain penalty: {low_domain}")
-            break
     text = f"{title} {url} {content}".lower()
     query_terms = [term for term in re.findall(r"[a-zA-Z0-9]+", user_query.lower()) if len(term) > 2]
 
     score = 0
     reasons = []
+
+    # Low-trust/noisy domain penalty.
+    for low_domain, penalty in LOW_TRUST_DOMAINS.items():
+        if low_domain in domain:
+            score += penalty
+            reasons.append(f"low-trust/noisy domain penalty: {low_domain}")
+            break
 
     # Domain trust.
     for trusted_domain, weight in TRUSTED_AUTOMOTIVE_DOMAINS.items():
@@ -223,13 +226,13 @@ def tavily_research_search(user_query: str, max_results: int = 8) -> list[Resear
             query=query,
             max_results=max_results,
             include_answer=False,
-            include_raw_content=False,
+            include_raw_content=True,
         )
 
         for result in response.get("results", []):
             title = result.get("title") or "Untitled source"
             url = result.get("url") or ""
-            content = result.get("content") or ""
+            content = result.get("raw_content") or result.get("content") or ""
 
             if not url:
                 continue
