@@ -8,14 +8,13 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from preprocess import load_documents
+from storage import CHROMA_PATH, COLLECTION_NAME
 
 
 load_dotenv()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 EMBED_MODEL = "text-embedding-3-small"
-CHROMA_PATH = "vectorstore/chroma_db"
-COLLECTION_NAME = "boostrag_docs"
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 

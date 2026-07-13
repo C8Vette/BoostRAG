@@ -9,10 +9,12 @@ from urllib.parse import urlparse
 
 from rag_types import RetrievedContext
 from ingest_urls import ingest_url
+from storage import DATA_DIR
 
-BLACKLIST_PATH = Path("data/blacklist.json")
-QUERIES_LOG = Path("data/provenance/queries.jsonl")
-COUNTER_PATH = Path("data/provenance/web_search_counter.json")
+BLACKLIST_PATH = DATA_DIR / "blacklist.json"
+QUERIES_LOG = DATA_DIR / "provenance" / "queries.jsonl"
+COUNTER_PATH = DATA_DIR / "provenance" / "web_search_counter.json"
+ASK_COUNTER_PATH = DATA_DIR / "provenance" / "ask_counter.json"
 
 
 def _domain(url: str) -> str:
@@ -73,6 +75,19 @@ def increment_web_search() -> None:
     COUNTER_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
+def asks_today() -> int:
+    data = _load_json(ASK_COUNTER_PATH, {})
+    return int(data.get(date.today().isoformat(), 0))
+
+
+def increment_ask() -> None:
+    ASK_COUNTER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    data = _load_json(ASK_COUNTER_PATH, {})
+    today = date.today().isoformat()
+    data[today] = int(data.get(today, 0)) + 1
+    ASK_COUNTER_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
 def _text_to_html(title: str, body: str) -> str:
     return (
         f"<html><head><title>{html.escape(title)}</title></head>"
@@ -83,6 +98,8 @@ def _text_to_html(title: str, body: str) -> str:
 
 def maybe_ingest_web_sources(query: str, contexts: list[RetrievedContext]) -> list[dict]:
     """Auto-ingest high-trust, non-blacklisted web sources. Returns per-source records."""
+    if os.getenv("AUTO_INGEST_ENABLED", "true").lower() not in ("true", "1", "yes"):
+        return [{"url": ctx.url or "", "score": (ctx.trust_score if ctx.trust_score is not None else float("-inf")), "ingested": False, "route": None} for ctx in contexts]
     min_score = float(os.getenv("AUTO_INGEST_MIN_SCORE", "9"))
     records: list[dict] = []
     for ctx in contexts:

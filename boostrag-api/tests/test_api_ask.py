@@ -9,7 +9,7 @@ from rag_types import AnswerResult
 
 def _client():
     with patch("main.ensure_chroma_collection"):
-        import main
+        import importlib, main; importlib.reload(main)
         return TestClient(main.app)
 
 
@@ -20,8 +20,9 @@ def test_ask_returns_origin_and_sources():
                   "trust_tier": "strong_candidate", "price": None, "text_preview": "..."}],
         confidence={"sufficient": False, "nearest_distance": None},
     )
+    client = _client()
     with patch("main.answer_question", return_value=result):
-        resp = _client().post("/ask", json={"query": "downpipe?"})
+        resp = client.post("/ask", json={"query": "downpipe?"})
     assert resp.status_code == 200
     body = resp.json()
     assert body["origin"] == "web"

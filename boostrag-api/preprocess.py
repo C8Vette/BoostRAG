@@ -3,8 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
-# Directory for collecting cleaned corpus files for the RAG pipeline
-DATA_DIR = Path("data/cleaned")
+from storage import DATA_DIR as _STORAGE_DATA_DIR
+
+# Directory for collecting cleaned corpus files for the RAG pipeline.
+# Derived from the shared storage root so the read path tracks the write path
+# (in prod both live on the mounted disk via BOOSTRAG_DATA_DIR).
+DATA_DIR = _STORAGE_DATA_DIR / "cleaned"
 
 
 def parse_document(file_path: Path) -> Dict[str, str]:

@@ -1,22 +1,41 @@
 from __future__ import annotations
 
-from fastapi import FastAPI, HTTPException
+import os
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from orchestrator import answer_question
 from chunk_embed import ensure_chroma_collection
+from provenance import asks_today, increment_ask
 
 
 app = FastAPI(title="BoostRAG API")
 
+BUSY_MESSAGE = "BoostRAG has had a busy day and hit its demo limit. Please check back tomorrow!"
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+def _rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "You're asking a lot, very fast — please slow down and try again in a minute."},
+    )
+
+
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+_allowed_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,14 +80,20 @@ def root() -> dict[str, str]:
 
 
 @app.post("/ask", response_model=AskResponse)
-def ask_boostrag(request: AskRequest) -> AskResponse:
-    query = request.query.strip()
+@limiter.limit(lambda: os.getenv("RATE_LIMIT", "20/minute"))
+def ask_boostrag(request: Request, payload: AskRequest) -> AskResponse:
+    query = payload.query.strip()
 
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
+    cap = int(os.getenv("DAILY_ASK_CAP", "500"))
+    if asks_today() >= cap:
+        return AskResponse(answer=BUSY_MESSAGE, origin="none", confidence={}, sources=[])
+    increment_ask()
+
     try:
-        result = answer_question(query=query, top_k=request.top_k)
+        result = answer_question(query=query, top_k=payload.top_k)
         sources = [Source(**{k: v for k, v in s.items() if k in Source.model_fields}) for s in result.sources]
         return AskResponse(
             answer=result.answer,
