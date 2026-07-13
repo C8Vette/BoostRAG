@@ -8,8 +8,9 @@ import chromadb
 
 from provenance import add_to_blacklist
 from retrieve import CHROMA_PATH, COLLECTION_NAME
+from storage import DATA_DIR
 
-METADATA_DIR = Path("data/metadata")
+METADATA_DIR = DATA_DIR / "metadata"
 
 
 def _get_collection():
