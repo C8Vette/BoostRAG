@@ -98,6 +98,8 @@ def _text_to_html(title: str, body: str) -> str:
 
 def maybe_ingest_web_sources(query: str, contexts: list[RetrievedContext]) -> list[dict]:
     """Auto-ingest high-trust, non-blacklisted web sources. Returns per-source records."""
+    if os.getenv("AUTO_INGEST_ENABLED", "true").lower() not in ("true", "1", "yes"):
+        return [{"url": ctx.url or "", "score": (ctx.trust_score if ctx.trust_score is not None else float("-inf")), "ingested": False, "route": None} for ctx in contexts]
     min_score = float(os.getenv("AUTO_INGEST_MIN_SCORE", "9"))
     records: list[dict] = []
     for ctx in contexts:
