@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,12 +12,12 @@ from chunk_embed import ensure_chroma_collection
 app = FastAPI(title="BoostRAG API")
 
 
+_default_origins = "http://localhost:5173,http://127.0.0.1:5173"
+_allowed_origins = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", _default_origins).split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
