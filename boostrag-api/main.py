@@ -11,9 +11,12 @@ from slowapi.errors import RateLimitExceeded
 
 from orchestrator import answer_question
 from chunk_embed import ensure_chroma_collection
+from provenance import asks_today, increment_ask
 
 
 app = FastAPI(title="BoostRAG API")
+
+BUSY_MESSAGE = "BoostRAG has had a busy day and hit its demo limit. Please check back tomorrow!"
 
 limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
@@ -83,6 +86,11 @@ def ask_boostrag(request: Request, payload: AskRequest) -> AskResponse:
 
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty.")
+
+    cap = int(os.getenv("DAILY_ASK_CAP", "500"))
+    if asks_today() >= cap:
+        return AskResponse(answer=BUSY_MESSAGE, origin="none", confidence={}, sources=[])
+    increment_ask()
 
     try:
         result = answer_question(query=query, top_k=payload.top_k)

@@ -14,6 +14,7 @@ from storage import DATA_DIR
 BLACKLIST_PATH = DATA_DIR / "blacklist.json"
 QUERIES_LOG = DATA_DIR / "provenance" / "queries.jsonl"
 COUNTER_PATH = DATA_DIR / "provenance" / "web_search_counter.json"
+ASK_COUNTER_PATH = DATA_DIR / "provenance" / "ask_counter.json"
 
 
 def _domain(url: str) -> str:
@@ -72,6 +73,19 @@ def increment_web_search() -> None:
     today = date.today().isoformat()
     data[today] = int(data.get(today, 0)) + 1
     COUNTER_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def asks_today() -> int:
+    data = _load_json(ASK_COUNTER_PATH, {})
+    return int(data.get(date.today().isoformat(), 0))
+
+
+def increment_ask() -> None:
+    ASK_COUNTER_PATH.parent.mkdir(parents=True, exist_ok=True)
+    data = _load_json(ASK_COUNTER_PATH, {})
+    today = date.today().isoformat()
+    data[today] = int(data.get(today, 0)) + 1
+    ASK_COUNTER_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
 
 def _text_to_html(title: str, body: str) -> str:
