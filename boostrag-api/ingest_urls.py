@@ -12,9 +12,9 @@ import requests
 from bs4 import BeautifulSoup
 
 from source_ranker import score_source
+from storage import DATA_DIR
 
 
-DATA_DIR = Path("data")
 CLEANED_DIR = DATA_DIR / "cleaned"
 LIMITED_DIR = DATA_DIR / "limited"
 QUARANTINE_DIR = DATA_DIR / "quarantine"

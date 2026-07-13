@@ -9,10 +9,11 @@ from urllib.parse import urlparse
 
 from rag_types import RetrievedContext
 from ingest_urls import ingest_url
+from storage import DATA_DIR
 
-BLACKLIST_PATH = Path("data/blacklist.json")
-QUERIES_LOG = Path("data/provenance/queries.jsonl")
-COUNTER_PATH = Path("data/provenance/web_search_counter.json")
+BLACKLIST_PATH = DATA_DIR / "blacklist.json"
+QUERIES_LOG = DATA_DIR / "provenance" / "queries.jsonl"
+COUNTER_PATH = DATA_DIR / "provenance" / "web_search_counter.json"
 
 
 def _domain(url: str) -> str:

@@ -5,7 +5,9 @@ import os
 import time
 from pathlib import Path
 
-CACHE_PATH = Path("data/cache/answers.json")
+from storage import DATA_DIR
+
+CACHE_PATH = DATA_DIR / "cache" / "answers.json"
 
 
 def _normalize(query: str) -> str:
