@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from orchestrator import answer_question
 from chunk_embed import ensure_chroma_collection
 from provenance import asks_today, increment_ask
+from browse import browse_category
 
 
 app = FastAPI(title="BoostRAG API")
@@ -106,3 +107,12 @@ def ask_boostrag(request: Request, payload: AskRequest) -> AskResponse:
             status_code=500,
             detail=f"BoostRAG failed to answer the query: {exc}",
         ) from exc
+
+
+@app.get("/browse")
+@limiter.limit(lambda: os.getenv("RATE_LIMIT", "20/minute"))
+def browse(request: Request, category: str) -> dict:
+    result = browse_category(category)
+    if result is None:
+        raise HTTPException(status_code=404, detail=f"Unknown category: {category}")
+    return result
