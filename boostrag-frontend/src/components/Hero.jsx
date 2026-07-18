@@ -1,5 +1,6 @@
 import { Gauge, Zap, ShieldCheck } from "lucide-react";
 import { CornerMarks } from "./primitives";
+import { Reveal } from "./motion";
 
 export function Hero() {
   return (
@@ -49,21 +50,27 @@ export function Hero() {
             </p>
 
             <div className="mt-7 grid max-w-[600px] grid-cols-1 gap-3 sm:grid-cols-3">
-              <HeroMiniCard
-                icon={<Gauge size={34} />}
-                title="Precise Answers"
-                text="Backed by trusted sources & data"
-              />
-              <HeroMiniCard
-                icon={<Zap size={34} />}
-                title="Real-World Insights"
-                text="Community tested. Proven results."
-              />
-              <HeroMiniCard
-                icon={<ShieldCheck size={34} />}
-                title="Build Confidently"
-                text="The right parts. The right way."
-              />
+              <Reveal>
+                <HeroMiniCard
+                  icon={<Gauge size={34} />}
+                  title="Precise Answers"
+                  text="Backed by trusted sources & data"
+                />
+              </Reveal>
+              <Reveal>
+                <HeroMiniCard
+                  icon={<Zap size={34} />}
+                  title="Real-World Insights"
+                  text="Community tested. Proven results."
+                />
+              </Reveal>
+              <Reveal>
+                <HeroMiniCard
+                  icon={<ShieldCheck size={34} />}
+                  title="Build Confidently"
+                  text="The right parts. The right way."
+                />
+              </Reveal>
             </div>
           </div>
         </div>

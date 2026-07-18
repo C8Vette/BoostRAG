@@ -1,5 +1,6 @@
 import { Search } from "lucide-react";
 import { CornerMarks } from "./primitives";
+import { Swell } from "./motion";
 
 const examples = [
   "Best intake for B58 reliability?",
@@ -36,13 +37,15 @@ export function SearchBand({ query, setQuery, askBoostRAG, isLoading, onChipSele
             placeholder="Ask anything about M340i performance parts, mods, fitment, results..."
           />
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="relative w-[130px] bg-yellow-400 text-[13px] font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLoading ? "Thinking..." : "Search"}
-          </button>
+          <Swell className="flex! h-full">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="relative w-[130px] bg-yellow-400 text-[13px] font-black uppercase text-black transition hover:bg-yellow-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isLoading ? "Thinking..." : "Search"}
+            </button>
+          </Swell>
         </form>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
