@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Header } from "../components/Header";
 import { SideRail } from "../components/SideRail";
 import { Hero } from "../components/Hero";
@@ -8,6 +9,7 @@ import { useAsk } from "../lib/useAsk";
 
 export default function Landing() {
   const ask = useAsk();
+  const navigate = useNavigate();
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-black text-zinc-100">
@@ -29,6 +31,7 @@ export default function Landing() {
           setQuery={ask.setQuery}
           askBoostRAG={(question) => ask.submit(question)}
           isLoading={ask.isLoading}
+          onChipSelect={(text) => navigate(`/research?q=${encodeURIComponent(text)}`)}
         />
 
         <Dashboard

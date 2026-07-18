@@ -8,7 +8,7 @@ const examples = [
   "Best cooling upgrades for Stage 2?",
 ];
 
-export function SearchBand({ query, setQuery, askBoostRAG, isLoading }) {
+export function SearchBand({ query, setQuery, askBoostRAG, isLoading, onChipSelect }) {
   return (
     <section className="relative z-20 mx-auto -mt-2 max-w-[1580px] px-5 pt-8 lg:px-10">
       <div className="relative border border-zinc-700/80 bg-zinc-950/88 px-7 py-5 shadow-[0_12px_40px_rgba(0,0,0,.55)] backdrop-blur-md clip-search">
@@ -54,7 +54,7 @@ export function SearchBand({ query, setQuery, askBoostRAG, isLoading }) {
             <button
               key={item}
               type="button"
-              onClick={() => askBoostRAG(item)}
+              onClick={() => (onChipSelect ? onChipSelect(item) : askBoostRAG(item))}
               disabled={isLoading}
               className="group flex items-center gap-3 border border-zinc-700 bg-black/60 px-4 py-2 text-[13px] font-bold text-zinc-300 transition hover:border-red-600 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
             >

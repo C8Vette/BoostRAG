@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Settings, Zap } from "lucide-react";
 
 const navItems = ["Home", "Performance Areas", "Parts Library", "Guides", "About"];
@@ -55,10 +56,13 @@ export function Header() {
             <Settings size={19} />
           </button>
 
-          <button className="relative overflow-hidden bg-yellow-400 px-7 py-3 text-[13px] font-black uppercase tracking-wide text-black shadow-[0_0_24px_rgba(250,204,21,.24)] transition hover:bg-yellow-300">
+          <Link
+            to="/research"
+            className="relative overflow-hidden bg-yellow-400 px-7 py-3 text-[13px] font-black uppercase tracking-wide text-black shadow-[0_0_24px_rgba(250,204,21,.24)] transition hover:bg-yellow-300"
+          >
             <span className="relative z-10">Start Research</span>
             <span className="absolute inset-y-0 right-0 w-6 skew-x-[-22deg] bg-yellow-200/60" />
-          </button>
+          </Link>
         </div>
       </div>
     </header>
