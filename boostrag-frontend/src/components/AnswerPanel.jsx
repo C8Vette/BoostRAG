@@ -26,18 +26,26 @@ const answerCards = [
   },
 ];
 
-export function OriginBadge({ origin }) {
+export function OriginBadge({ origin, variant = "dark" }) {
   if (!origin) return null;
+
+  const darkTones = {
+    corpus: "bg-green-500/15 text-green-400",
+    web: "bg-blue-500/15 text-blue-400",
+    none: "bg-neutral-500/15 text-neutral-400",
+  };
+  const lightTones = {
+    corpus: "bg-green-600/10 text-green-700",
+    web: "bg-blue-600/10 text-blue-700",
+    none: "bg-neutral-500/10 text-neutral-600",
+  };
+  const tones = variant === "light" ? lightTones : darkTones;
 
   return (
     <span
       className={
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium mb-2 " +
-        (origin === "corpus"
-          ? "bg-green-500/15 text-green-400"
-          : origin === "web"
-          ? "bg-blue-500/15 text-blue-400"
-          : "bg-neutral-500/15 text-neutral-400")
+        (tones[origin] || tones.none)
       }
     >
       {origin === "corpus"
