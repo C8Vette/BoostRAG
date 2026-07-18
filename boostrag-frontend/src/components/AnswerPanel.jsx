@@ -26,18 +26,37 @@ const answerCards = [
   },
 ];
 
-export function OriginBadge({ origin }) {
+// eslint-disable-next-line react-refresh/only-export-components -- shared trust-tier label function is the Task 7 interface contract (CategoryPage imports it for item-card chips); splitting it into its own file would break that contract
+export function friendlyTier(raw) {
+  const map = {
+    "Tier 1": "Trusted vendor", "Tier 2": "Community", "Tier 3": "Unverified",
+    "1": "Trusted vendor", "2": "Community", "3": "Unverified",
+    strong_candidate: "Strong source", usable_candidate: "Usable source",
+    weak_candidate: "Weak source", reject_or_manual_review: "Low confidence",
+  };
+  return map[String(raw)] ?? raw;
+}
+
+export function OriginBadge({ origin, variant = "dark" }) {
   if (!origin) return null;
+
+  const darkTones = {
+    corpus: "bg-green-500/15 text-green-400",
+    web: "bg-blue-500/15 text-blue-400",
+    none: "bg-neutral-500/15 text-neutral-400",
+  };
+  const lightTones = {
+    corpus: "bg-green-600/10 text-green-700",
+    web: "bg-blue-600/10 text-blue-700",
+    none: "bg-neutral-500/10 text-neutral-600",
+  };
+  const tones = variant === "light" ? lightTones : darkTones;
 
   return (
     <span
       className={
         "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium mb-2 " +
-        (origin === "corpus"
-          ? "bg-green-500/15 text-green-400"
-          : origin === "web"
-          ? "bg-blue-500/15 text-blue-400"
-          : "bg-neutral-500/15 text-neutral-400")
+        (tones[origin] || tones.none)
       }
     >
       {origin === "corpus"
@@ -108,8 +127,11 @@ export function SourceBackedAnswers({ answer, sources, origin, error }) {
                       <p className="text-[11px] font-black uppercase text-red-600">
                         {source.category || "Source"}
                         {source.trust_tier && (
-                          <span className="ml-2 rounded bg-neutral-700/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-neutral-300">
-                            {source.trust_tier}
+                          <span
+                            title={source.trust_tier}
+                            className="ml-2 rounded bg-neutral-700/50 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-neutral-300"
+                          >
+                            {friendlyTier(source.trust_tier)}
                           </span>
                         )}
                       </p>
@@ -154,11 +176,11 @@ export function SourceBackedAnswers({ answer, sources, origin, error }) {
     <Panel className="p-4">
       <PanelHeader title="Source-Backed Answers" />
 
-      <div className="grid gap-3 xl:grid-cols-3">
+      <div className="grid gap-3 grid-cols-1 md:grid-cols-2 2xl:grid-cols-3">
         {answerCards.map((card) => (
           <article
             key={card.title}
-            className="group relative grid min-h-[185px] grid-cols-[130px_1fr] overflow-hidden border border-zinc-800 bg-zinc-950/90 transition hover:border-red-700"
+            className="group relative grid min-h-[185px] min-w-0 grid-cols-[130px_1fr] overflow-hidden border border-zinc-800 bg-zinc-950/90 transition hover:border-red-700"
           >
             <div className="relative overflow-hidden bg-black">
               <img
@@ -169,16 +191,16 @@ export function SourceBackedAnswers({ answer, sources, origin, error }) {
               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/45" />
             </div>
 
-            <div className="flex flex-col p-4">
-              <p className="text-[11px] font-black uppercase text-red-600">
+            <div className="flex min-w-0 flex-col p-4">
+              <p className="truncate text-[11px] font-black uppercase text-red-600">
                 {card.tag}
               </p>
 
-              <h3 className="mt-1 text-[16px] font-black leading-5 text-white">
+              <h3 className="mt-1 line-clamp-2 text-[16px] font-black leading-5 text-white">
                 {card.title}
               </h3>
 
-              <p className="mt-3 flex-1 text-[13px] font-medium leading-5 text-zinc-400">
+              <p className="mt-3 line-clamp-2 flex-1 text-[13px] font-medium leading-5 text-zinc-400">
                 {card.copy}
               </p>
 
@@ -186,7 +208,7 @@ export function SourceBackedAnswers({ answer, sources, origin, error }) {
                 <span>Sources: {card.sources}</span>
                 <ChevronRight
                   size={18}
-                  className="transition group-hover:translate-x-1 group-hover:text-red-500"
+                  className="shrink-0 transition group-hover:translate-x-1 group-hover:text-red-500"
                 />
               </div>
             </div>
