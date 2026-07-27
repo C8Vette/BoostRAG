@@ -34,7 +34,7 @@ Browser (Vercel)              Supabase                    Render (FastAPI)
 
 **Three critical guardrails (called out because they are the classic traps):**
 1. **Two keys, never mixed:** the **anon key** is public → frontend (`VITE_SUPABASE_ANON_KEY`). The **service-role key** bypasses all security → Render env only (`SUPABASE_SERVICE_ROLE_KEY`), never in frontend, never committed.
-2. **Row Level Security (RLS) is non-optional:** Postgres policies enforce `user_id = auth.uid()` on every table so a user can only touch their own rows — at the DB level. Enabled in the first migration.
+2. **Row Level Security (RLS) is non-optional — AND the backend must still filter explicitly.** Postgres RLS policies (`user_id = auth.uid()`) are enabled on every table in the first migration. **Critical:** all garage DB access in this design goes through the FastAPI backend using the **service-role key, which BYPASSES RLS.** So RLS here is defense-in-depth (protecting against any accidental direct anon-key access), NOT the primary control — every backend query MUST explicitly filter by the authenticated user's id (`.eq("user_id", uid)`), and inserts MUST stamp it. Never trust a `user_id`/`garage_id` from the request body; derive it from the verified JWT. This is the single most important correctness rule in the phase.
 3. **Degrade gracefully:** every auth/garage call in the `/ask` path is wrapped so Supabase errors/timeouts are swallowed and the request proceeds context-free.
 
 ## 4. Data Model (Supabase Postgres)
@@ -85,7 +85,7 @@ The final clause makes the model *flag* divergence from the user's build rather 
 - `require_user` → returns user id, raises 401 if missing/invalid (for `/garage`).
 - `optional_user` → returns user id or `None`, never raises (for `/ask`, preserving anonymous access).
 
-**Garage endpoints** (require a valid user; RLS-protected; DB access via Supabase service client on the backend, scoped by user id):
+**Garage endpoints** (require a valid user; DB access via the backend service-role client which bypasses RLS, so EVERY query filters `.eq("user_id", uid)` and every insert stamps the JWT-derived uid — never a body-supplied id; see §3 guardrail 2):
 ```
 GET    /garage            → { garage, mods } or 204 if none
 PUT    /garage            → create/update car (year, model, trim, context_on)
