@@ -56,13 +56,14 @@ def _corpus_answer(
     confidence: dict,
     *,
     cache: bool,
+    user_context: str | None = None,
 ) -> AnswerResult:
-    answer = generate_answer(query, corpus_ctx)
+    answer = generate_answer(query, corpus_ctx, user_context=user_context)
     sources = _sources_from_contexts(corpus_ctx)
     log_answer(query, "corpus", answer, sources)
     result = AnswerResult(answer, "corpus", sources, confidence)
     if cache:
-        set_cached(query, result.__dict__)
+        set_cached(query, result.__dict__, context=user_context or "")
     return result
 
 
@@ -88,7 +89,7 @@ def _sources_from_contexts(contexts: list[RetrievedContext]) -> list[dict]:
     return out
 
 
-def _try_web_answer(query: str, confidence: dict) -> AnswerResult | None:
+def _try_web_answer(query: str, confidence: dict, user_context: str | None = None) -> AnswerResult | None:
     """Attempt a web-sourced answer. Returns None if the daily fuse is blown or web has nothing."""
     cap = int(os.getenv("DAILY_WEB_SEARCH_CAP", "15"))
     if web_searches_today() >= cap:
@@ -97,7 +98,7 @@ def _try_web_answer(query: str, confidence: dict) -> AnswerResult | None:
     web_ctx = WebRetriever().retrieve(query)
     if not web_ctx:
         return None
-    answer = generate_answer(query, web_ctx)
+    answer = generate_answer(query, web_ctx, user_context=user_context)
     sources = _sources_from_contexts(web_ctx)
     ingest_records = maybe_ingest_web_sources(query, web_ctx)
     logged_sources = [
@@ -106,12 +107,12 @@ def _try_web_answer(query: str, confidence: dict) -> AnswerResult | None:
     ]
     log_answer(query, "web", answer, logged_sources)
     result = AnswerResult(answer, "web", sources, confidence)
-    set_cached(query, result.__dict__)
+    set_cached(query, result.__dict__, context=user_context or "")
     return result
 
 
-def answer_question(query: str, top_k: int = 3) -> AnswerResult:
-    cached = get_cached(query)
+def answer_question(query: str, top_k: int = 3, user_context: str | None = None) -> AnswerResult:
+    cached = get_cached(query, context=user_context or "")
     if cached:
         return AnswerResult(**cached)
 
@@ -121,25 +122,25 @@ def answer_question(query: str, top_k: int = 3) -> AnswerResult:
                   "nearest_distance": verdict.nearest_distance}
 
     if verdict.sufficient:
-        answer = generate_answer(query, corpus_ctx)
+        answer = generate_answer(query, corpus_ctx, user_context=user_context)
         insufficient = _looks_insufficient(answer)
         if insufficient:
-            web = _try_web_answer(query, confidence)
+            web = _try_web_answer(query, confidence, user_context=user_context)
             if web is not None:
                 return web
         sources = _sources_from_contexts(corpus_ctx)
         log_answer(query, "corpus", answer, sources)
         result = AnswerResult(answer, "corpus", sources, confidence)
         if not insufficient:
-            set_cached(query, result.__dict__)
+            set_cached(query, result.__dict__, context=user_context or "")
         return result
 
-    web = _try_web_answer(query, confidence)
+    web = _try_web_answer(query, confidence, user_context=user_context)
     if web is not None:
         return web
 
     if corpus_ctx:
-        return _corpus_answer(query, corpus_ctx, confidence, cache=False)
+        return _corpus_answer(query, corpus_ctx, confidence, cache=False, user_context=user_context)
 
     log_answer(query, "none", NO_ANSWER, [])
     return AnswerResult(NO_ANSWER, "none", [], confidence)
