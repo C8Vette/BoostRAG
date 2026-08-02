@@ -13,6 +13,8 @@ from orchestrator import answer_question
 from chunk_embed import ensure_chroma_collection
 from provenance import asks_today, increment_ask
 from browse import browse_category
+from auth import optional_user, require_user
+import garage_store
 
 
 app = FastAPI(title="BoostRAG API")
@@ -46,6 +48,7 @@ app.add_middleware(
 class AskRequest(BaseModel):
     query: str
     top_k: int = 2
+    use_context: bool = True
 
 
 class Source(BaseModel):
@@ -93,8 +96,19 @@ def ask_boostrag(request: Request, payload: AskRequest) -> AskResponse:
         return AskResponse(answer=BUSY_MESSAGE, origin="none", confidence={}, sources=[])
     increment_ask()
 
+    user_context = None
+    if payload.use_context:
+        uid = optional_user(request)
+        if uid:
+            try:
+                data = garage_store.get_garage(uid)
+                if data and data.get("garage") and data["garage"].get("context_on", True):
+                    user_context = garage_store.build_context_block(data) or None
+            except garage_store.GarageUnavailable:
+                user_context = None      # degrade gracefully — answer without personalization
+
     try:
-        result = answer_question(query=query, top_k=payload.top_k)
+        result = answer_question(query=query, top_k=payload.top_k, user_context=user_context)
         sources = [Source(**{k: v for k, v in s.items() if k in Source.model_fields}) for s in result.sources]
         return AskResponse(
             answer=result.answer,
@@ -116,3 +130,57 @@ def browse(request: Request, category: str) -> dict:
     if result is None:
         raise HTTPException(status_code=404, detail=f"Unknown category: {category}")
     return result
+
+
+class GarageIn(BaseModel):
+    year: int
+    model: str
+    trim: str | None = None
+    context_on: bool = True
+
+
+class ModIn(BaseModel):
+    category: str
+    name: str
+    source_url: str | None = None
+
+
+@app.get("/garage")
+@limiter.limit(lambda: os.getenv("RATE_LIMIT", "20/minute"))
+def get_garage(request: Request):
+    uid = require_user(request)
+    try:
+        return garage_store.get_garage(uid)
+    except garage_store.GarageUnavailable:
+        raise HTTPException(status_code=503, detail="Garage is temporarily unavailable.")
+
+
+@app.put("/garage")
+@limiter.limit(lambda: os.getenv("RATE_LIMIT", "20/minute"))
+def put_garage(request: Request, payload: GarageIn):
+    uid = require_user(request)
+    try:
+        return garage_store.upsert_garage(uid, payload.year, payload.model, payload.trim, payload.context_on)
+    except garage_store.GarageUnavailable:
+        raise HTTPException(status_code=503, detail="Garage is temporarily unavailable.")
+
+
+@app.post("/garage/mods")
+@limiter.limit(lambda: os.getenv("RATE_LIMIT", "20/minute"))
+def post_mod(request: Request, payload: ModIn):
+    uid = require_user(request)
+    try:
+        return garage_store.add_mod(uid, payload.category, payload.name, payload.source_url)
+    except garage_store.GarageUnavailable:
+        raise HTTPException(status_code=503, detail="Garage is temporarily unavailable.")
+
+
+@app.delete("/garage/mods/{mod_id}")
+@limiter.limit(lambda: os.getenv("RATE_LIMIT", "20/minute"))
+def delete_mod(request: Request, mod_id: str):
+    uid = require_user(request)
+    try:
+        garage_store.delete_mod(uid, mod_id)
+        return {"deleted": mod_id}
+    except garage_store.GarageUnavailable:
+        raise HTTPException(status_code=503, detail="Garage is temporarily unavailable.")
