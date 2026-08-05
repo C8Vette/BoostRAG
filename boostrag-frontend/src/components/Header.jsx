@@ -1,8 +1,91 @@
-import { Link } from "react-router-dom";
-import { Settings, Zap } from "lucide-react";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Settings, Zap, ChevronDown } from "lucide-react";
 import { Swell } from "./motion";
+import { useAuth } from "../lib/auth";
 
 const navItems = ["Home", "Performance Areas", "Parts Library", "Guides", "About"];
+
+function AuthControl({ light }) {
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
+  if (!user) {
+    return (
+      <Link
+        to="/login"
+        className={`hidden h-11 items-center whitespace-nowrap border px-4 text-[13px] font-black uppercase tracking-wide transition lg:inline-flex ${
+          light
+            ? "border-zinc-300 bg-white text-zinc-700 hover:border-red-600 hover:text-red-500"
+            : "border-zinc-700 bg-zinc-950 text-zinc-200 hover:border-red-600 hover:text-red-500"
+        }`}
+      >
+        Sign in
+      </Link>
+    );
+  }
+
+  const label = user.email || "Account";
+
+  return (
+    <div className="relative hidden lg:block">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`flex h-11 max-w-[220px] items-center gap-2 border px-3 text-[13px] font-bold transition ${
+          light
+            ? "border-zinc-300 bg-white text-zinc-700 hover:border-zinc-900"
+            : "border-zinc-700 bg-zinc-950 text-zinc-200 hover:border-zinc-400"
+        }`}
+      >
+        <span className="grid h-6 w-6 place-items-center bg-red-600 text-[11px] font-black uppercase text-white">
+          {label[0]?.toUpperCase() || "U"}
+        </span>
+        <span className="truncate">{label}</span>
+        <ChevronDown size={15} className="shrink-0" />
+      </button>
+
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div
+            className={`absolute right-0 z-50 mt-1 w-48 border shadow-lg ${
+              light ? "border-zinc-300 bg-white" : "border-zinc-700 bg-zinc-950"
+            }`}
+          >
+            <Link
+              to="/garage"
+              onClick={() => setOpen(false)}
+              className={`block px-4 py-3 text-[13px] font-bold uppercase tracking-wide transition ${
+                light
+                  ? "text-zinc-700 hover:bg-zinc-100"
+                  : "text-zinc-200 hover:bg-zinc-900"
+              }`}
+            >
+              My Garage
+            </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                setOpen(false);
+                await signOut();
+                navigate("/");
+              }}
+              className={`block w-full px-4 py-3 text-left text-[13px] font-bold uppercase tracking-wide transition ${
+                light
+                  ? "text-red-600 hover:bg-zinc-100"
+                  : "text-red-500 hover:bg-zinc-900"
+              }`}
+            >
+              Sign out
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Header({ light = false }) {
   return (
@@ -90,6 +173,8 @@ export function Header({ light = false }) {
           >
             <Settings size={19} />
           </button>
+
+          <AuthControl light={light} />
 
           <Swell className="inline-flex! h-full">
             <Link

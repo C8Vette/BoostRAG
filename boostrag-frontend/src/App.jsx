@@ -3,6 +3,7 @@ import { AuthProvider } from "./lib/auth";
 import Landing from "./pages/Landing";
 import Research from "./pages/Research";
 import CategoryPage from "./pages/CategoryPage";
+import Login from "./pages/Login";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/research" element={<Research />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/category/:slug" element={<CategoryPage />} />
         </Routes>
       </BrowserRouter>
