@@ -5,7 +5,7 @@ import { FooterStrip } from "../components/FooterStrip";
 import { Panel, PanelHeader } from "../components/primitives";
 import { Swell, Reveal } from "../components/motion";
 import { browseCategory } from "../lib/api";
-import { friendlyTier } from "../components/AnswerPanel";
+import { friendlyTier, AddToGarageButton } from "../components/AnswerPanel";
 
 // eslint-disable-next-line react-refresh/only-export-components -- shared slug/label map is the Task 3 interface contract for nav reuse (Dashboard's CategoryPanel imports it); splitting it into its own file would break that contract
 export const CATEGORY_LABELS = {
@@ -112,6 +112,9 @@ function CategoryPageBody({ slug }) {
                       View Source
                     </a>
                   )}
+                  <div>
+                    <AddToGarageButton category={label} name={item.product} url={item.url} />
+                  </div>
                 </article>
               ))}
             </div>

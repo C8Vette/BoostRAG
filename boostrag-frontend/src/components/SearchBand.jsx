@@ -9,15 +9,52 @@ const examples = [
   "Best cooling upgrades for Stage 2?",
 ];
 
-export function SearchBand({ query, setQuery, askBoostRAG, isLoading, onChipSelect }) {
+export function SearchBand({
+  query,
+  setQuery,
+  askBoostRAG,
+  isLoading,
+  onChipSelect,
+  personalizable = false,
+  garageModel,
+  useContext = true,
+  setUseContext,
+}) {
   return (
     <section className="relative z-20 mx-auto -mt-2 max-w-[1580px] px-5 pt-8 lg:px-10">
       <div className="relative border border-zinc-700/80 bg-zinc-950/88 px-7 py-5 shadow-[0_12px_40px_rgba(0,0,0,.55)] backdrop-blur-md clip-search">
         <CornerMarks />
 
-        <h2 className="mb-4 text-[20px] font-black italic uppercase tracking-wide text-yellow-400">
-          Ask BoostRAG
-        </h2>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-[20px] font-black italic uppercase tracking-wide text-yellow-400">
+            Ask BoostRAG
+          </h2>
+
+          {personalizable && (
+            <button
+              type="button"
+              onClick={() => setUseContext?.(!useContext)}
+              role="switch"
+              aria-checked={useContext}
+              className={`flex items-center gap-2 text-[11px] font-black uppercase tracking-wide transition ${
+                useContext ? "text-green-400" : "text-zinc-500"
+              }`}
+            >
+              <span
+                className={`relative h-4 w-8 rounded-full transition ${
+                  useContext ? "bg-green-500/80" : "bg-zinc-700"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all ${
+                    useContext ? "left-4" : "left-0.5"
+                  }`}
+                />
+              </span>
+              Personalized for your {garageModel || "build"}
+            </button>
+          )}
+        </div>
 
         <form
           className="flex h-[46px] overflow-hidden border border-zinc-700 bg-black"

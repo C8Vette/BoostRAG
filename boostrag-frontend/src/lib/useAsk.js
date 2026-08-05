@@ -8,6 +8,8 @@ export function useAsk(initialQuery = "") {
   const [origin, setOrigin] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  // Per-request personalization toggle (does not mutate the stored garage setting).
+  const [useContext, setUseContext] = useState(true);
 
   async function submit(question = query) {
     const cleanedQuery = (question || "").trim();
@@ -24,7 +26,7 @@ export function useAsk(initialQuery = "") {
     setOrigin("");
 
     try {
-      const data = await askBoostRAG(cleanedQuery);
+      const data = await askBoostRAG(cleanedQuery, 2, useContext);
 
       setAnswer(data.answer);
       setSources(data.sources || []);
@@ -39,5 +41,8 @@ export function useAsk(initialQuery = "") {
     }
   }
 
-  return { query, setQuery, answer, sources, origin, error, isLoading, submit };
+  return {
+    query, setQuery, answer, sources, origin, error, isLoading, submit,
+    useContext, setUseContext,
+  };
 }

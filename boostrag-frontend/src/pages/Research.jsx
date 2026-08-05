@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Header } from "../components/Header";
 import { SideRail } from "../components/SideRail";
@@ -6,12 +6,33 @@ import { SearchBand } from "../components/SearchBand";
 import { Dashboard } from "../components/Dashboard";
 import { FooterStrip } from "../components/FooterStrip";
 import { useAsk } from "../lib/useAsk";
+import { useAuth } from "../lib/auth";
+import { getGarage } from "../lib/api";
 
 export default function Research() {
   const [params] = useSearchParams();
   const seeded = params.get("q") || "";
   const ask = useAsk(seeded);
+  const { user } = useAuth();
+  const [garageCar, setGarageCar] = useState(null);
   const seededOnce = useRef(false);
+
+  // Know whether to offer personalization (logged in + a saved car).
+  const loadGarageCar = useCallback(async () => {
+    try {
+      const data = await getGarage();
+      setGarageCar(data?.garage ?? null);
+    } catch {
+      setGarageCar(null);
+    }
+  }, []);
+
+  useEffect(() => {
+    // On logout garageCar may be stale, but `personalizable` also gates on `user`,
+    // so no synchronous clear is needed here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- awaits getGarage before setState; no synchronous cascade
+    if (user) loadGarageCar();
+  }, [user, loadGarageCar]);
 
   useEffect(() => {
     if (seeded && !seededOnce.current) {
@@ -40,6 +61,10 @@ export default function Research() {
           setQuery={ask.setQuery}
           askBoostRAG={(question) => ask.submit(question)}
           isLoading={ask.isLoading}
+          personalizable={Boolean(user && garageCar)}
+          garageModel={garageCar?.model}
+          useContext={ask.useContext}
+          setUseContext={ask.setUseContext}
         />
 
         <Dashboard

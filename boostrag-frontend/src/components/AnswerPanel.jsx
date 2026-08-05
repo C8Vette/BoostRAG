@@ -1,6 +1,51 @@
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { ChevronRight } from "lucide-react";
 import { Panel, PanelHeader } from "./primitives";
+import { useAuth } from "../lib/auth";
+import { addMod } from "../lib/api";
+
+// Progressive add — only appears when signed in; tags a part straight into the
+// user's garage from any answer or part card.
+export function AddToGarageButton({ category, name, url }) {
+  const { user } = useAuth();
+  const [status, setStatus] = useState("idle"); // idle | saving | done | error
+
+  if (!user || !name) return null;
+
+  async function add() {
+    setStatus("saving");
+    try {
+      await addMod({ category: category || "Other", name, source_url: url || null });
+      setStatus("done");
+    } catch {
+      setStatus("error");
+    }
+  }
+
+  if (status === "done") {
+    return (
+      <span className="mt-3 inline-block text-[11px] font-black uppercase text-green-400">
+        ✓ Added to garage
+      </span>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={add}
+      disabled={status === "saving"}
+      className="mt-3 inline-block border border-zinc-700 px-3 py-1 text-[11px] font-black uppercase text-zinc-300 transition hover:border-yellow-400 hover:text-yellow-400 disabled:opacity-50"
+    >
+      {status === "saving"
+        ? "Adding…"
+        : status === "error"
+        ? "Try again"
+        : "＋ Own this? Add to garage"}
+    </button>
+  );
+}
 
 const answerCards = [
   {
@@ -161,6 +206,14 @@ export function SourceBackedAnswers({ answer, sources, origin, error }) {
                           View Source
                         </a>
                       )}
+
+                      <div>
+                        <AddToGarageButton
+                          category={source.category}
+                          name={source.product || source.source_file}
+                          url={source.url}
+                        />
+                      </div>
                     </article>
                   ))}
                 </div>
