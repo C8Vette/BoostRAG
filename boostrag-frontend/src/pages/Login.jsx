@@ -7,6 +7,32 @@ import { Swell } from "../components/motion";
 // aggressive M-car front-end can drop in later by swapping this one import.
 import heroImg from "../assets/hero-studio.jpg";
 
+// Turn raw Supabase/network errors into on-brand, human copy.
+function friendlyAuthError(err) {
+  const raw = (err?.message || "").toLowerCase();
+  if (
+    err?.name === "AuthRetryableFetchError" ||
+    raw.includes("fetch") ||
+    raw.includes("network") ||
+    raw.includes("load failed")
+  ) {
+    return "Can't reach the garage right now — check your connection and try again in a moment.";
+  }
+  if (raw.includes("invalid login") || raw.includes("invalid credentials")) {
+    return "That email and password don't match. Give it another shot.";
+  }
+  if (raw.includes("already registered") || raw.includes("already been registered")) {
+    return "There's already an account with this email — try signing in instead.";
+  }
+  if (raw.includes("email not confirmed")) {
+    return "Confirm your email first, then sign in.";
+  }
+  if (raw.includes("password") && (raw.includes("6") || raw.includes("short") || raw.includes("least"))) {
+    return "Password needs to be at least 6 characters.";
+  }
+  return err?.message || "Something went wrong. Please try again.";
+}
+
 export default function Login() {
   const { signInWithPassword, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
@@ -28,7 +54,7 @@ export default function Login() {
     const { data, error: err } = await fn(email.trim(), password);
     setBusy(false);
     if (err) {
-      setError(err.message || "Something went wrong. Please try again.");
+      setError(friendlyAuthError(err));
       return;
     }
     if (mode === "signup" && !data?.session) {
@@ -43,7 +69,7 @@ export default function Login() {
   async function handleGoogle() {
     setError("");
     const { error: err } = await signInWithGoogle();
-    if (err) setError(err.message || "Google sign-in is unavailable.");
+    if (err) setError(friendlyAuthError(err));
     // On success the browser redirects to Google, then back to /garage.
   }
 
